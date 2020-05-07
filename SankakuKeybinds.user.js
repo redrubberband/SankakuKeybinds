@@ -2,7 +2,7 @@
 // @name         Sankaku Keybinds
 // @namespace    http://tampermonkey.net/
 // @version      0.5
-// @description  try to take over the world!
+// @description  Added favorite + download keybind for sankaku
 // @author       Rubberband
 // @match        https://*.sankakucomplex.com/*
 // @grant        GM_download
