@@ -1,106 +1,20 @@
 // ==UserScript==
 // @name         Sankaku Downloader (Manual)
 // @namespace    http://tampermonkey.net/
-// @version      0.69-tryingtofixmessycode
+// @version      1.0-Release
 // @description  Added favorite + download keybind for sankaku
 // @author       redrubberband
-// @include      *
-// @exclude      *.google.*/*
+// @match        *.bing.com/*
+// @match        *.sankakucomplex.com/*
+// @match        redgifs.com/*
+// @match        6gamesonline.com/*
+// @match        h-flash.com/*
 // @grant        GM_download
 // @grant        GM_notification
 // @grant        GM_setClipboard
 // ==/UserScript==
 
-(function() {
-    'use strict';
-    console.log("Script is loaded")
-    
-    // Two functions: scrolls the page so that it's more usable,
-    // and marks the chan site as a single-execution type.
-    if (isChan){
-        document.querySelector(".favoriteIcon").scrollIntoView()
-        singleExecution = true
-    } 
-
-    // Detect keyboard keypress
-    document.onkeypress = function (e) {
-        // I just copied this part from stackoverflow
-        // and I don't wanna break it, because it worked.
-        e = e || window.event; 
-
-        // Feature activation via switch-case
-        switch(e.key){
-            case favoriteKey:{
-                console.log("Key " + favoriteKey + " is pressed")
-                if (isChan){
-                    let favicon     = document.querySelector(".favoriteIcon")
-                    let addToFavs   = document.querySelector("#add-to-favs")
-                    //check if fav-icon is hidden
-                    var currStyle   = window.getComputedStyle(addToFavs)
-                    //check if fav-icon is already favorited
-                    if (currStyle.getPropertyValue("display") == "none"){
-                        console.log("Changing favorite value...")
-                        favicon = document.querySelectorAll(".favoriteIcon.clicked")[0]
-                        //console.log(favicon)
-                    }
-                    favicon.click()
-                    //revert back to default state for repeatability
-                    favicon = document.querySelector(".favoriteIcon")
-                    break
-                } else {
-                    console.log("Website is not Chan / Idol!")
-                    break
-                }
-            }
-
-            case downloadKey:{
-                console.log("Key " + downloadKey + " is pressed")
-                if (!alreadyExecutedOnce){
-                    switch(currentLocation){
-                        case addresses.BING:
-                            imageSource = document.querySelector(selectors.BING).currentSrc
-                            folderName = folderNames.BING
-                            console.log("Current site is bing")
-                            break
-                        case addresses.CHAN:
-                            imageSource = document.querySelector(selectors.CHAN).currentSrc
-                            folderName = folderNames.CHAN
-                            console.log("Current site is Chan")
-                            break
-                        case addresses.CHAN_IDOL:
-                            imageSource = document.querySelector(selectors.CHAN_IDOL).currentSrc
-                            folderName = folderNames.CHAN_IDOL
-                            console.log("Current site is Idol")
-                            break
-                        case addresses.REDGIFS:
-                            imageSource = document.querySelector(selectors.REDGIFS).currentSrc
-                            folderName = folderNames.REDGIFS
-                            console.log("Current site is redgifs")
-                            break
-                        case addresses.SANKAKU_WEBSITE:
-                            imageSource = document.querySelector(selectors.SANKAKU_WEBSITE).currentSrc
-                            folderName = folderNames.SANKAKU_WEBSITE
-                            console.log("Current site is Sankaku")
-                            break
-                        case addresses._6GAMES:
-                            imageSource = document.querySelector(selectors._6GAMES).getAttribute(selectors._6GAMES_ATTRIBUTE)
-                            break
-                        case addresses.H_FLASH:
-                            imageSource = document.querySelector(selectors.H_FLASH).src
-                            break
-                    }
-                    // Calls the download function
-                    grab_content(imageSource, folderName)
-                    // Prevents duplicate download
-                    if (singleExecution) alreadyExecutedOnce = true
-                } else {
-                    console.log("Repeat download is disabled! You have already downloaded this image once")
-                }
-                break;
-            }
-        }
-    };
-})();
+'use strict'
 
 // Default values for reference, do not change. 
 // You can customize them later below.
@@ -166,9 +80,97 @@ var folderName = folderNames.default
 var singleExecution = false
 var alreadyExecutedOnce = false
 
+console.log("Script is loaded")
+
+// Two functions: scrolls the page so that it's more usable,
+// and marks the chan site as a single-execution type.
+if (isChan){
+    document.querySelector(".favoriteIcon").scrollIntoView()
+    singleExecution = true
+} 
+
+// Detect keyboard keypress
+document.onkeypress = function (e) {
+    // I just copied this part from stackoverflow
+    // and I don't wanna break it, because it worked.
+    e = e || window.event; 
+
+    // Feature activation via switch-case
+    switch(e.key){
+        case favoriteKey:{
+            console.log("Key " + favoriteKey + " is pressed")
+            if (isChan){
+                let favicon     = document.querySelector(".favoriteIcon")
+                let addToFavs   = document.querySelector("#add-to-favs")
+                //check if fav-icon is hidden
+                var currStyle   = window.getComputedStyle(addToFavs)
+                //check if fav-icon is already favorited
+                if (currStyle.getPropertyValue("display") == "none"){
+                    console.log("Changing favorite value...")
+                    favicon = document.querySelector(".favoriteIcon.clicked")
+                    //console.log(favicon)
+                }
+                favicon.click()
+                //revert back to default state for repeatability
+                favicon = document.querySelector(".favoriteIcon")
+                break
+            } else {
+                console.log("Website is not Chan / Idol!")
+                break
+            }
+        }
+
+        case downloadKey:{
+            console.log("Key " + downloadKey + " is pressed")
+            if (!alreadyExecutedOnce){
+                switch(currentLocation){
+                    case addresses.BING:
+                        imageSource = document.querySelector(selectors.BING).currentSrc
+                        folderName = folderNames.BING
+                        console.log("Current site is bing")
+                        break
+                    case addresses.CHAN:
+                        imageSource = document.querySelector(selectors.CHAN).currentSrc
+                        folderName = folderNames.CHAN
+                        console.log("Current site is Chan")
+                        break
+                    case addresses.CHAN_IDOL:
+                        imageSource = document.querySelector(selectors.CHAN_IDOL).currentSrc
+                        folderName = folderNames.CHAN_IDOL
+                        console.log("Current site is Idol")
+                        break
+                    case addresses.REDGIFS:
+                        imageSource = document.querySelector(selectors.REDGIFS).currentSrc
+                        folderName = folderNames.REDGIFS
+                        console.log("Current site is redgifs")
+                        break
+                    case addresses.SANKAKU_WEBSITE:
+                        imageSource = document.querySelector(selectors.SANKAKU_WEBSITE).currentSrc
+                        folderName = folderNames.SANKAKU_WEBSITE
+                        console.log("Current site is Sankaku")
+                        break
+                    case addresses._6GAMES:
+                        imageSource = document.querySelector(selectors._6GAMES).getAttribute(selectors._6GAMES_ATTRIBUTE)
+                        break
+                    case addresses.H_FLASH:
+                        imageSource = document.querySelector(selectors.H_FLASH).src
+                        break
+                }
+                // Calls the download function
+                grab_content(imageSource, folderName)
+                // Prevents duplicate download
+                if (singleExecution) alreadyExecutedOnce = true
+            } else {
+                console.log("Repeat download is disabled! You have already downloaded this image once")
+            }
+            break;
+        }
+    }
+}
+
 function grab_content(imageSource){
         console.log("Content grabber activated.")
-
+        
         // Cleans the link and get the filename
         let fileName = imageSource.replace(/^.*[\\\/]/, '');
         if (fileName.indexOf('?') != -1){
@@ -181,10 +183,15 @@ function grab_content(imageSource){
 
         if (isBing){
             let extension = fileName.split('.').pop()
-            if (extension.length > 5){                                  //this one checks for files without extensions, usually media extensions is no longer than 5 characters
+            // Check for files without extension
+            // 5 is chosen as the value because usually media extensions is no longer than 5 characters
+            // please do correct me if I'm wrong
+            if (extension.length > 5){
                 console.log("Missing extension! Adding...")
-                fileName = fileName.replace(".", "")                    //replaces weird characters (need to be added later)
-                extension = ".jpg"                                      //I just assumed it will be a jpg. Fix it manually later on if it's wrong
+                // Replace weird characters (for now, just dot, more might get added later)
+                fileName = fileName.replace(".", "")
+                // I just assumed it will be a jpg. Fix it manually later on if it's wrong
+                extension = ".jpg"
                 fileName = fileName.concat(extension)
             }
         }
