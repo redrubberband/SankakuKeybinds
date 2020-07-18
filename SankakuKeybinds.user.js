@@ -5,69 +5,30 @@
 // @description  Added favorite + download keybind for sankaku
 // @author       redrubberband
 // @include      *
+// @exclude      *.google.*/*
 // @grant        GM_download
 // @grant        GM_notification
 // @grant        GM_setClipboard
 // ==/UserScript==
+
 (function() {
     'use strict';
-    // Default values, do not change.
-    var downloadKey = "x"
-    var favoriteKey = "v"
-    var timeoutLength = 5000
-    var usingCustomFolder = false
-    var customFolderName = ""
-    var allowRepeatDownloads = false
-    
-    // Another init, but unrelated.
-    // Still, do not change the values here.
-    var alreadyExecutedOnce = false
-    var currentLink = window.location.href
-    var currentLocation = location.host
-    var isChan = (currentLink.search("chan") != -1) || (currentLink.search("idol") != -1)
-    var isSankaku 
-    var isBing = currentLink.search("bing") != -1
-    var isRedgifs
-
-    const addresses = {
-        BING                : "www.bing.com",
-        CHAN                : "chan.sankakucomplex.com",
-        REDGIFS             : "redgifs.com",
-        SANKAKU_WEBSITE     : "www.sankakucomplex.com",
-        _6GAMES             : "6gamesonline.com",
-        HFLASH              : "h-flash.com"
-    }
-
-    const selectors = {
-        BING                : "img.nofocus",
-        CHAN                : "#image",
-        REDGIFS             : ".video.media",
-        SANKAKU_WEBSITE     : "img",
-        _6GAMES             : "param",
-        _6GAMES_ATTRIBUTE   : "value",
-        H_FLASH             : "embed"
-    }
-
-    // Change this value to false if you want to customize them down below
-    var using_default_values        = true
-    if (!using_default_values) {
-        downloadKey                 = "x"
-        favoriteKey                 = "v"
-        timeoutLength               = 5000
-        usingCustomFolder           = false
-        customFolderName            = ""
-        allowRepeatDownloads        = false
-    }
-
     console.log("Script is loaded")
     
-    // Code begins here.    
+    // Two functions: scrolls the page so that it's more usable,
+    // and marks the chan site as a single-execution type.
+    if (isChan){
+        document.querySelector(".favoriteIcon").scrollIntoView()
+        singleExecution = true
+    } 
 
-    //detect keyboard press
+    // Detect keyboard keypress
     document.onkeypress = function (e) {
-        e = e || window.event;                                          //I just copied this part and I don't wanna break it because it worked
+        // I just copied this part from stackoverflow
+        // and I don't wanna break it, because it worked.
+        e = e || window.event; 
 
-        //Main program switchcase
+        // Feature activation via switch-case
         switch(e.key){
             case favoriteKey:{
                 console.log("Key " + favoriteKey + " is pressed")
@@ -95,140 +56,155 @@
             case downloadKey:{
                 console.log("Key " + downloadKey + " is pressed")
                 if (!alreadyExecutedOnce){
-
-                    let img
                     switch(currentLocation){
                         case addresses.BING:
-                            img = document.querySelector(selectors.BING)
+                            imageSource = document.querySelector(selectors.BING).currentSrc
+                            folderName = folderNames.BING
+                            console.log("Current site is bing")
                             break
                         case addresses.CHAN:
-                            document.querySelector(".favoriteIcon").scrollIntoView()
-                            img = document.querySelector(selectors.CHAN)
+                            imageSource = document.querySelector(selectors.CHAN).currentSrc
+                            folderName = folderNames.CHAN
+                            console.log("Current site is Chan")
+                            break
+                        case addresses.CHAN_IDOL:
+                            imageSource = document.querySelector(selectors.CHAN_IDOL).currentSrc
+                            folderName = folderNames.CHAN_IDOL
+                            console.log("Current site is Idol")
                             break
                         case addresses.REDGIFS:
-                            img = document.querySelector(selectors.REDGIFS)
+                            imageSource = document.querySelector(selectors.REDGIFS).currentSrc
+                            folderName = folderNames.REDGIFS
+                            console.log("Current site is redgifs")
                             break
                         case addresses.SANKAKU_WEBSITE:
-                            img = document.querySelector(selectors.SANKAKU_WEBSITE)
+                            imageSource = document.querySelector(selectors.SANKAKU_WEBSITE).currentSrc
+                            folderName = folderNames.SANKAKU_WEBSITE
+                            console.log("Current site is Sankaku")
                             break
                         case addresses._6GAMES:
-                            img = document.querySelector(selectors._6GAMES).getAttribute(selectors._6GAMES_ATTRIBUTE)
+                            imageSource = document.querySelector(selectors._6GAMES).getAttribute(selectors._6GAMES_ATTRIBUTE)
                             break
                         case addresses.H_FLASH:
-                            img = document.querySelector(selectors.H_FLASH).src
-
+                            imageSource = document.querySelector(selectors.H_FLASH).src
+                            break
                     }
-
-                    //debugging
-                    console.log(typeof(img))
-                    console.log("img is "+img)
-
-                    //calls the download function
-                    alreadyExecutedOnce = grab(img, timeoutLength, usingCustomFolder, customFolderName, allowRepeatDownloads, currentLink)
-                    console.log("Will only execute once: "+alreadyExecutedOnce)
-
+                    // Calls the download function
+                    grab_content(imageSource, folderName)
+                    // Prevents duplicate download
+                    if (singleExecution) alreadyExecutedOnce = true
                 } else {
                     console.log("Repeat download is disabled! You have already downloaded this image once")
                 }
-
                 break;
             }
         }
     };
 })();
 
+// Default values for reference, do not change. 
+// You can customize them later below.
+var downloadKey = "x"
+var favoriteKey = "v"
+var timeoutLength = 5000
+var usingCustomFolder = false
+var customFolderName = ""
+var allowRepeatDownloads = false
 
-function grab(img,                                                      //this function handles the download section
-        timeoutLength,
-        isCustomFolder,
-        customFolderName,
-        allowRepeatDownloads,
-        currentLink){
-    console.log("Grabber is loaded")
+// Another init, but unrelated.
+// Still, do not change the values here.
+var currentLink         = window.location.href
+var currentLocation     = location.host
 
-    //get the current link
-    let link = img.src || img.currentSrc
+const addresses = {
+    BING                : "www.bing.com",
+    CHAN                : "chan.sankakucomplex.com",
+    CHAN_IDOL           : "idol.sankakucomplex.com",
+    REDGIFS             : "redgifs.com",
+    SANKAKU_WEBSITE     : "www.sankakucomplex.com",
+    _6GAMES             : "6gamesonline.com",
+    H_FLASH             : "h-flash.com"
+}
 
-    if (currentLink.search("6games") != -1){
-        link = img
-    }else if (currentLink.search("h-flash") != -1){
-        link = img
-    }
+const selectors = {
+    BING                : "img.nofocus",
+    CHAN                : "#image",
+    CHAN_IDOL           : "#image",
+    REDGIFS             : ".video.media",
+    SANKAKU_WEBSITE     : "img",
+    _6GAMES             : "param",
+    _6GAMES_ATTRIBUTE   : "value",
+    H_FLASH             : "embed"
+}
 
-    console.log("it is "+img)
-    console.log("the link is "+link)
+const folderNames = {
+    BING                : "bing",
+    CHAN                : "Sankaku Channel",
+    CHAN_IDOL           : "Idol Complex",
+    REDGIFS             : "redgifs",
+    SANKAKU_WEBSITE     : "Sankaku Website",
+    default             : window.location.hostname
+}
 
-    //cleans link for filename
-    let fileName = link.replace(/^.*[\\\/]/, '');
-    if (fileName.indexOf('?') != -1){
-    fileName = fileName.substring(0, fileName.indexOf('?'));
-    }
+var isChan = (currentLocation == addresses.CHAN) || (currentLocation == addresses.CHAN_IDOL)
+var isBing = (currentLocation == addresses.BING)
 
-    //check if isCustom tag is used
-    if (isCustomFolder){
-        folderName = customFolderName
-    } else {
-        //initialize the folder name
-        var folderName = "Sankaku Website"
+// Change this value to false if you want to customize them
+var using_default_values        = true
+if (!using_default_values) {
+    downloadKey                 = "x"
+    favoriteKey                 = "v"
+    timeoutLength               = 5000
+    usingCustomFolder           = false
+    customFolderName            = ""
+    allowRepeatDownloads        = false
+}
 
-        if (currentLink.search("idol") != -1){
-            folderName = "Idol Complex"
-            console.log("Current site is Idol")
-        } else if (currentLink.search("chan") != -1){
-            folderName = "Sankaku Channel"
-            console.log("Current site is Chan")
-        } else if (currentLink.search("beta.sankaku") != -1){
-            folderName = "Sankaku Channel"
-            console.log("Current site is Chan")
-        } else if (currentLink.search("sankaku") != -1){
-            folderName = "Sankaku Website"
-            console.log("Current site is Sankaku")
-        } else if (currentLink.search("redgifs") != -1){
-            folderName = "redgifs"
-            console.log("Current site is redgifs")
-        } else if (currentLink.search("bing") != -1){
-            folderName = "bing"
-            console.log("Current site is bing")
-            var extension = fileName.split('.').pop()
+// Init some other default values
+var imageSource
+var folderName = folderNames.default
+var singleExecution = false
+var alreadyExecutedOnce = false
+
+function grab_content(imageSource){
+        console.log("Content grabber activated.")
+
+        // Cleans the link and get the filename
+        let fileName = imageSource.replace(/^.*[\\\/]/, '');
+        if (fileName.indexOf('?') != -1){
+            fileName = fileName.substring(0, fileName.indexOf('?'));
+        }
+
+        if (usingCustomFolder){
+            folderName = customFolderName
+        }
+
+        if (isBing){
+            let extension = fileName.split('.').pop()
             if (extension.length > 5){                                  //this one checks for files without extensions, usually media extensions is no longer than 5 characters
                 console.log("Missing extension! Adding...")
                 fileName = fileName.replace(".", "")                    //replaces weird characters (need to be added later)
                 extension = ".jpg"                                      //I just assumed it will be a jpg. Fix it manually later on if it's wrong
                 fileName = fileName.concat(extension)
             }
-            console.log("Projected path: "+folderName+fileName)
-            console.log(link)
-        } else {
-            folderName = window.location.hostname
         }
-    }
-    folderName = "SKDownloader/" + folderName + "/"
 
-    //arguments for GM_download function
-    var arg = {
-        url: link,
-        name: folderName + fileName,
-        onload: function(){
-            //executes the notification
-            GM_notification({
-                text:"Download finished " + fileName,
-                timeout:timeoutLength
-            })
+        let finalFileName = "SKDownloader/" + folderName + "/" + fileName
+
+        let downloadArgs = {
+            url: imageSource,
+            name: finalFileName,
+            onload: function(){
+                GM_notification({
+                    text:"Download finished " + fileName,
+                    timeout:timeoutLength
+                })
+            }
         }
+
+        console.log("Attempting download...")
+        GM_download(downloadArgs)
+
+        // Copies the image link to clipboard for in case something went wrong
+        GM_setClipboard(imageSource)
     }
-
-    //execute the download
-    //var download = GM_download(arg)
-    console.log("Download status:" + GM_download(arg))
-
-    //copy the img link to clipboard for backup incase something went wrong
-    var copyLink = GM_setClipboard(link)
-
-    if(allowRepeatDownloads ||                                          //this one will prevent the download from repeating for imageboards (preventing duplicates)
-            folderName == "SKDownloader/redgifs/" ||                    //...at least, until the page is refreshed.
-            folderName == "SKDownloader/bing/"){                        //other websites menitoned here wouldn't work because some of it is dynamic
-        return false
-    } else {
-        return true
-    }
-}
