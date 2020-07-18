@@ -1,37 +1,67 @@
 // ==UserScript==
 // @name         Sankaku Downloader (Manual)
 // @namespace    http://tampermonkey.net/
-// @version      0.68c-textfixing
+// @version      0.69-tryingtofixmessycode
 // @description  Added favorite + download keybind for sankaku
 // @author       redrubberband
-// @match        https://*.sankakucomplex.com/*
-// @match        https://*.redgifs.com/*
-// @match        https://*.bing.com/images/*
+// @include      *
 // @grant        GM_download
 // @grant        GM_notification
 // @grant        GM_setClipboard
 // ==/UserScript==
 (function() {
     'use strict';
+    // Default values, do not change.
+    var downloadKey = "x"
+    var favoriteKey = "v"
+    var timeoutLength = 5000
+    var usingCustomFolder = false
+    var customFolderName = ""
+    var allowRepeatDownloads = false
+    
+    // Another init, but unrelated.
+    // Still, do not change the values here.
+    var alreadyExecutedOnce = false
+    var currentLink = window.location.href
+    var currentLocation = location.host
+    var isChan = (currentLink.search("chan") != -1) || (currentLink.search("idol") != -1)
+    var isSankaku 
+    var isBing = currentLink.search("bing") != -1
+    var isRedgifs
 
-    //============Personalization config here=================
-    var downloadKey = "x"                       //default: "x"
-    var favoriteKey = "v"                       //default: "v"
-    //================Advanced options========================
-    var imageSelector = "#image"                //default: "#image"
-    var redImageSelector = ".video.media"       //default: ".video.media"
-    var bingImageSelector = "img.nofocus"       //default: "img.nofocus"
-    var sankakuImageSelector = "img"            //default: ".shrinkToFit"
-    var allowRepeatDownloads = false            //default: false
-    //================Download options========================
-    var timeoutLength = 5000                    //default: 5000         //this number is in ms
-    var isCustomFolder = false                  //default: false        //it will autodetect idol/chan, sent to your OS download folder
-    var customFolderName = ""                   //default: ""
-    //========================================================
+    const addresses = {
+        BING                : "www.bing.com",
+        CHAN                : "chan.sankakucomplex.com",
+        REDGIFS             : "redgifs.com",
+        SANKAKU_WEBSITE     : "www.sankakucomplex.com",
+        _6GAMES             : "6gamesonline.com",
+        HFLASH              : "h-flash.com"
+    }
 
-    //init setup, don't change vars here please
-    var executedOnce = false
+    const selectors = {
+        BING                : "img.nofocus",
+        CHAN                : "#image",
+        REDGIFS             : ".video.media",
+        SANKAKU_WEBSITE     : "img",
+        _6GAMES             : "param",
+        _6GAMES_ATTRIBUTE   : "value",
+        H_FLASH             : "embed"
+    }
+
+    // Change this value to false if you want to customize them down below
+    var using_default_values        = true
+    if (!using_default_values) {
+        downloadKey                 = "x"
+        favoriteKey                 = "v"
+        timeoutLength               = 5000
+        usingCustomFolder           = false
+        customFolderName            = ""
+        allowRepeatDownloads        = false
+    }
+
     console.log("Script is loaded")
+    
+    // Code begins here.    
 
     //detect keyboard press
     document.onkeypress = function (e) {
@@ -39,58 +69,54 @@
 
         //Main program switchcase
         switch(e.key){
-
             case favoriteKey:{
                 console.log("Key " + favoriteKey + " is pressed")
-
-                //locate the favorite icon
-                let favicon = document.querySelector(".favoriteIcon")
-                let addToFavs = document.querySelector("#add-to-favs")
-
-                //check if fav-icon is hidden
-                var currStyle = window.getComputedStyle(addToFavs)
-
-                //check if fav-icon is already favorited 
-                if (currStyle.getPropertyValue("display") == "none"){
-                    console.log("changing value...")
-                    favicon = document.querySelectorAll(".favoriteIcon.clicked")[0]
-                    console.log(favicon)
+                if (isChan){
+                    let favicon     = document.querySelector(".favoriteIcon")
+                    let addToFavs   = document.querySelector("#add-to-favs")
+                    //check if fav-icon is hidden
+                    var currStyle   = window.getComputedStyle(addToFavs)
+                    //check if fav-icon is already favorited
+                    if (currStyle.getPropertyValue("display") == "none"){
+                        console.log("Changing favorite value...")
+                        favicon = document.querySelectorAll(".favoriteIcon.clicked")[0]
+                        //console.log(favicon)
+                    }
+                    favicon.click()
+                    //revert back to default state for repeatability
+                    favicon = document.querySelector(".favoriteIcon")
+                    break
+                } else {
+                    console.log("Website is not Chan / Idol!")
+                    break
                 }
-
-                //clicks the fav icon
-                favicon.click()
-
-                //revert back to default state for repeatability
-                favicon = document.querySelector(".favoriteIcon")
-
-                break;
             }
 
             case downloadKey:{
                 console.log("Key " + downloadKey + " is pressed")
+                if (!alreadyExecutedOnce){
 
-                //checks if download action is already executed once or not
-                if (!executedOnce){
+                    let img
+                    switch(currentLocation){
+                        case addresses.BING:
+                            img = document.querySelector(selectors.BING)
+                            break
+                        case addresses.CHAN:
+                            document.querySelector(".favoriteIcon").scrollIntoView()
+                            img = document.querySelector(selectors.CHAN)
+                            break
+                        case addresses.REDGIFS:
+                            img = document.querySelector(selectors.REDGIFS)
+                            break
+                        case addresses.SANKAKU_WEBSITE:
+                            img = document.querySelector(selectors.SANKAKU_WEBSITE)
+                            break
+                        case addresses._6GAMES:
+                            img = document.querySelector(selectors._6GAMES).getAttribute(selectors._6GAMES_ATTRIBUTE)
+                            break
+                        case addresses.H_FLASH:
+                            img = document.querySelector(selectors.H_FLASH).src
 
-                    //grabs the initial tag
-                    var img = document.querySelector(imageSelector)
-                    
-                    //gets the current image that you want to download
-                    if (img == null){
-                        console.log("yeet")
-                        img = document.querySelectorAll(redImageSelector)
-                        console.log(typeof(img[0]))
-                        if (typeof(img[0]) == "undefined"){
-                            console.log("undef")
-                            img = document.querySelectorAll(bingImageSelector)
-                            if (typeof(img[0]) == "undefined"){
-                                console.log("undefv2")
-                                img = document.querySelectorAll(sankakuImageSelector)
-                            }
-                        }
-                        console.log(typeof(img))
-                        console.log(img)
-                        img = img[0]
                     }
 
                     //debugging
@@ -98,8 +124,8 @@
                     console.log("img is "+img)
 
                     //calls the download function
-                    executedOnce = grab(img, timeoutLength, isCustomFolder, customFolderName, allowRepeatDownloads)
-                    console.log("Will only execute once: "+executedOnce)
+                    alreadyExecutedOnce = grab(img, timeoutLength, usingCustomFolder, customFolderName, allowRepeatDownloads, currentLink)
+                    console.log("Will only execute once: "+alreadyExecutedOnce)
 
                 } else {
                     console.log("Repeat download is disabled! You have already downloaded this image once")
@@ -113,14 +139,22 @@
 
 
 function grab(img,                                                      //this function handles the download section
-        timeoutLength, 
-        isCustomFolder, 
-        customFolderName, 
-        allowRepeatDownloads){      
+        timeoutLength,
+        isCustomFolder,
+        customFolderName,
+        allowRepeatDownloads,
+        currentLink){
     console.log("Grabber is loaded")
 
     //get the current link
     let link = img.src || img.currentSrc
+
+    if (currentLink.search("6games") != -1){
+        link = img
+    }else if (currentLink.search("h-flash") != -1){
+        link = img
+    }
+
     console.log("it is "+img)
     console.log("the link is "+link)
 
@@ -130,27 +164,30 @@ function grab(img,                                                      //this f
     fileName = fileName.substring(0, fileName.indexOf('?'));
     }
 
-    //check the current site for folder naming feature
-    let currentLink = window.location.href
-
     //check if isCustom tag is used
     if (isCustomFolder){
-        folderName = customFolderName+"/"
+        folderName = customFolderName
     } else {
         //initialize the folder name
-        var folderName = "Sankaku Website/"
+        var folderName = "Sankaku Website"
 
         if (currentLink.search("idol") != -1){
-            folderName = "Idol Complex/"
+            folderName = "Idol Complex"
             console.log("Current site is Idol")
         } else if (currentLink.search("chan") != -1){
-            folderName = "Sankaku Channel/"
+            folderName = "Sankaku Channel"
             console.log("Current site is Chan")
+        } else if (currentLink.search("beta.sankaku") != -1){
+            folderName = "Sankaku Channel"
+            console.log("Current site is Chan")
+        } else if (currentLink.search("sankaku") != -1){
+            folderName = "Sankaku Website"
+            console.log("Current site is Sankaku")
         } else if (currentLink.search("redgifs") != -1){
-            folderName = "redgifs/"
+            folderName = "redgifs"
             console.log("Current site is redgifs")
         } else if (currentLink.search("bing") != -1){
-            folderName = "bing/"
+            folderName = "bing"
             console.log("Current site is bing")
             var extension = fileName.split('.').pop()
             if (extension.length > 5){                                  //this one checks for files without extensions, usually media extensions is no longer than 5 characters
@@ -161,9 +198,11 @@ function grab(img,                                                      //this f
             }
             console.log("Projected path: "+folderName+fileName)
             console.log(link)
+        } else {
+            folderName = window.location.hostname
         }
     }
-    folderName = "SKDownloader/" + folderName
+    folderName = "SKDownloader/" + folderName + "/"
 
     //arguments for GM_download function
     var arg = {
