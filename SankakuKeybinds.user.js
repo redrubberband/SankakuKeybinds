@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Sankaku Downloader (Manual)
 // @namespace    http://tampermonkey.net/
-// @version      1.2-exhentai
+// @version      1.2b-exhentai-navigation
 // @description  Added favorite + download keybind for sankaku
 // @author       redrubberband
 // @match        *.bing.com/*
@@ -74,14 +74,15 @@ const folderNames = {
 
 var isChan = (currentLocation == addresses.CHAN) || (currentLocation == addresses.CHAN_IDOL)
 var isBing = (currentLocation == addresses.BING)
-var isExhentai = (currentLocation == addresses.EXHENTAI)
+var isExhentai = (currentLocation == addresses.EXHENTAI && document.location.href.indexOf("/g/" > -1))
 
-// Change this value to false if you want to customize them
-var using_default_values        = false
-if (!using_default_values) {
+// Change this value to true if you want to customize them
+var using_custom_values        = true
+
+if (using_custom_values) {
     downloadKey                 = "x"
     favoriteKey                 = "v"
-    timeoutLength               = 2500
+    timeoutLength               = 500
     usingCustomFolder           = false
     customFolderName            = ""
     allowRepeatDownloads        = true
@@ -102,13 +103,33 @@ if (isChan){
 }
 
 // Detect keyboard keypress
-document.onkeypress = function (e) {
+document.onkeydown = function (e) {
     // I just copied this part from stackoverflow
     // and I don't wanna break it, because it worked.
     e = e || window.event;
 
     // Feature activation via switch-case
     switch(e.key){
+        case "ArrowLeft":{
+            if (isExhentai) {
+                let originalUrl = document.location.href.split("?")
+                window.location = (originalUrl[0].concat("?p=").concat(parseInt(originalUrl[1].replace(/[^0-9]/g,''))-1))
+            }
+            break
+        }
+
+        case "ArrowRight":{
+            if (isExhentai) {
+                let originalUrl = document.location.href.split("?")
+                try{
+                    window.location = (originalUrl[0].concat("?p=").concat(parseInt(originalUrl[1].replace(/[^0-9]/g,''))+1))
+                } catch (err){
+                    window.location = (originalUrl[0].concat("?p=1"))
+                }
+            }
+            break
+        }
+
         case favoriteKey:{
             console.log("Key " + favoriteKey + " is pressed")
             if (isChan){
@@ -237,12 +258,7 @@ function grab_content(imageSource){
     let downloadArgs = {
         url: imageSource,
         name: finalFileName,
-        onload: function(){
-            GM_notification({
-                text:"Download finished " + fileName,
-                timeout:timeoutLength
-            })
-        }
+        //onload: notify(fileName)
     }
 
     console.log("Attempting download...")
@@ -250,4 +266,11 @@ function grab_content(imageSource){
 
     // Copies the image link to clipboard for in case something went wrong
     GM_setClipboard(imageSource)
+}
+
+function notify(fileName){
+    return GM_notification({
+        text:"Download finished " + fileName,
+        timeout:timeoutLength
+    })
 }
