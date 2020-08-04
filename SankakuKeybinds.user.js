@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Sankaku Downloader (Manual)
 // @namespace    http://tampermonkey.net/
-// @version      1.2b-exhentai-navigation
+// @version      1.2d-exhentai-QOL
 // @description  Added favorite + download keybind for sankaku
 // @author       redrubberband
 // @match        *.bing.com/*
@@ -74,10 +74,11 @@ const folderNames = {
 
 var isChan = (currentLocation == addresses.CHAN) || (currentLocation == addresses.CHAN_IDOL)
 var isBing = (currentLocation == addresses.BING)
-var isExhentai = (currentLocation == addresses.EXHENTAI && document.location.href.indexOf("/g/" > -1))
+var isExhentai = (currentLocation == addresses.EXHENTAI && document.location.href.indexOf("/g/") > -1)
+var isExhentaiImage = (currentLocation == addresses.EXHENTAI && document.location.href.indexOf("/s/") > -1)
 
 // Change this value to true if you want to customize them
-var using_custom_values        = true
+var using_custom_values        = false
 
 if (using_custom_values) {
     downloadKey                 = "x"
@@ -100,6 +101,14 @@ console.log("Script is loaded")
 // and marks the chan site as a single-execution type.
 if (isChan){
     document.querySelector(selectors.CHAN).scrollIntoView()
+}
+if (isExhentaiImage) {
+    console.log("Is exhentai image!")
+    document.querySelector(selectors.EXHENTAI).onload = function() {
+        document.querySelector(selectors.EXHENTAI).scrollIntoView()
+        document.querySelector(selectors.EXHENTAI).style.width = 'auto'
+        document.querySelector(selectors.EXHENTAI).style.maxHeight = '650px'
+    }
 }
 
 // Detect keyboard keypress
@@ -225,8 +234,12 @@ function grab_content(imageSource){
     // Cleans the link and get the filename
     let fileName = imageSource.replace(/^.*[\\\/]/, '');
 
-    if (isExhentai) {
-        fileName = document.querySelector("h1").innerHTML.replace("\/","／").replace(/^.*[\\\/]/, '').concat(" "+fileName)
+    if (isExhentaiImage) {
+        console.log(fileName)
+        //fileName = document.querySelector("h1").innerHTML.split('\|').join('／').split('\/').join('／').replace(/^.*[\\\/]/, '').concat(" "+fileName)
+        fileName = document.querySelector("h1").innerHTML.replace('\|', '[').replace('\|', ']').replace('\/', '／').replace(/^.*[\\\/]/, '').concat(" "+fileName)
+        console.log(fileName)
+        //console.log(typeof(fileName))
     }
 
     if (fileName.indexOf('?') != -1){
