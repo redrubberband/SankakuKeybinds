@@ -1,13 +1,14 @@
 // ==UserScript==
 // @name         Sankaku Downloader (Manual)
 // @namespace    http://tampermonkey.net/
-// @version      1.1c-reddit
+// @version      1.2-exhentai
 // @description  Added favorite + download keybind for sankaku
 // @author       redrubberband
 // @match        *.bing.com/*
 // @match        *.pixiv.net/en/artworks/*
 // @match        *.redd.it/*
 // @match        *.sankakucomplex.com/*
+// @match        exhentai.org/*
 // @match        h-flash.com/*
 // @match        i.pximg.net/*
 // @match        redgifs.com/*
@@ -44,7 +45,8 @@ const addresses = {
     PIXIV               : "www.pixiv.net",
     PXIMG               : "i.pximg.net",
     IREDDIT             : "i.redd.it",
-    EXTPREVREDDIT       : "external-preview.redd.it"
+    EXTPREVREDDIT       : "external-preview.redd.it",
+    EXHENTAI            : "exhentai.org"
 }
 
 const selectors = {
@@ -54,6 +56,7 @@ const selectors = {
     _6GAMES             : "param",
     _6GAMES_ATTRIBUTE   : "value",
     H_FLASH             : "embed",
+    EXHENTAI            : "#img",
     default             : "img"
 }
 
@@ -65,11 +68,13 @@ const folderNames = {
     SANKAKU_WEBSITE     : "Sankaku Website",
     PIXIV               : "Pixiv",
     REDDIT              : "Reddit",
+    EXHENTAI            : "exhentai",
     default             : window.location.hostname
 }
 
 var isChan = (currentLocation == addresses.CHAN) || (currentLocation == addresses.CHAN_IDOL)
 var isBing = (currentLocation == addresses.BING)
+var isExhentai = (currentLocation == addresses.EXHENTAI)
 
 // Change this value to false if you want to customize them
 var using_default_values        = false
@@ -175,6 +180,11 @@ document.onkeypress = function (e) {
                         break
                     case addresses.EXTPREVREDDIT:
                         folderName = folderNames.REDDIT
+                        break
+                    case addresses.EXHENTAI:
+                        imageSource = document.querySelector(selectors.EXHENTAI).currentSrc
+                        folderName = folderNames.EXHENTAI
+                        break
                 }
                 // Calls the download function
                 grab_content(imageSource, folderName)
@@ -193,6 +203,11 @@ function grab_content(imageSource){
 
     // Cleans the link and get the filename
     let fileName = imageSource.replace(/^.*[\\\/]/, '');
+
+    if (isExhentai) {
+        fileName = document.querySelector("h1").innerHTML.replace("\/","／").replace(/^.*[\\\/]/, '').concat(" "+fileName)
+    }
+
     if (fileName.indexOf('?') != -1){
         fileName = fileName.substring(0, fileName.indexOf('?'));
     }
