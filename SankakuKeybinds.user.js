@@ -1,14 +1,16 @@
 // ==UserScript==
 // @name         Sankaku Downloader (Manual)
 // @namespace    http://tampermonkey.net/
-// @version      1.2d-exhentai-QOL
+// @version      1.2g-nhentai
 // @description  Added favorite + download keybind for sankaku
 // @author       redrubberband
 // @match        *.bing.com/*
+// @match        *.nhentai.net/*
 // @match        *.pixiv.net/en/artworks/*
 // @match        *.redd.it/*
 // @match        *.sankakucomplex.com/*
 // @match        exhentai.org/*
+// @match        e-hentai.org/*
 // @match        h-flash.com/*
 // @match        i.pximg.net/*
 // @match        redgifs.com/*
@@ -28,6 +30,7 @@ var timeoutLength = 5000
 var usingCustomFolder = false
 var customFolderName = ""
 var allowRepeatDownloads = false
+var archiveMode = false
 
 // Another init, but unrelated.
 // Still, do not change the values here.
@@ -46,7 +49,9 @@ const addresses = {
     PXIMG               : "i.pximg.net",
     IREDDIT             : "i.redd.it",
     EXTPREVREDDIT       : "external-preview.redd.it",
-    EXHENTAI            : "exhentai.org"
+    EXHENTAI            : "exhentai.org",
+    EHENTAI             : "e-hentai.org",
+    NHENTAI             : "nhentai.net"
 }
 
 const selectors = {
@@ -57,6 +62,7 @@ const selectors = {
     _6GAMES_ATTRIBUTE   : "value",
     H_FLASH             : "embed",
     EXHENTAI            : "#img",
+    NHENTAI             : "#image-container a img",
     default             : "img"
 }
 
@@ -69,16 +75,18 @@ const folderNames = {
     PIXIV               : "Pixiv",
     REDDIT              : "Reddit",
     EXHENTAI            : "exhentai",
+    NHENTAI             : "nhentai",
     default             : window.location.hostname
 }
 
 var isChan = (currentLocation == addresses.CHAN) || (currentLocation == addresses.CHAN_IDOL)
 var isBing = (currentLocation == addresses.BING)
-var isExhentai = (currentLocation == addresses.EXHENTAI && document.location.href.indexOf("/g/") > -1)
-var isExhentaiImage = (currentLocation == addresses.EXHENTAI && document.location.href.indexOf("/s/") > -1)
+var isExhentai = ((currentLocation == addresses.EXHENTAI || currentLocation == addresses.EHENTAI) && document.location.href.indexOf("/g/") > -1)
+var isExhentaiImage = ((currentLocation == addresses.EXHENTAI || currentLocation == addresses.EHENTAI) && document.location.href.indexOf("/s/") > -1)
+var isNhentaiImage = (currentLocation == addresses.NHENTAI && document.location.href.indexOf("/g/") > -1)
 
 // Change this value to true if you want to customize them
-var using_custom_values        = false
+var using_custom_values        = true
 
 if (using_custom_values) {
     downloadKey                 = "x"
@@ -86,7 +94,8 @@ if (using_custom_values) {
     timeoutLength               = 500
     usingCustomFolder           = false
     customFolderName            = ""
-    allowRepeatDownloads        = true
+    allowRepeatDownloads        = false
+    archiveMode                 = false
 }
 
 // Init some other default values
@@ -97,17 +106,28 @@ var alreadyExecutedOnce = false
 
 console.log("Script is loaded")
 
-// Two functions: scrolls the page so that it's more usable,
-// and marks the chan site as a single-execution type.
+// This is my personal script customization which may or may not be suitable for general use.
 if (isChan){
     document.querySelector(selectors.CHAN).scrollIntoView()
 }
 if (isExhentaiImage) {
     console.log("Is exhentai image!")
-    document.querySelector(selectors.EXHENTAI).onload = function() {
-        document.querySelector(selectors.EXHENTAI).scrollIntoView()
+    window.onload = function() {
         document.querySelector(selectors.EXHENTAI).style.width = 'auto'
-        document.querySelector(selectors.EXHENTAI).style.maxHeight = '650px'
+        document.querySelector(selectors.EXHENTAI).style.maxHeight = '850px'
+        document.querySelector(selectors.EXHENTAI).scrollIntoView()
+        if (archiveMode) {
+            setSourceAndFolder()
+            grab_content(imageSource, folderName)
+            window.close()
+        }
+    }
+}
+if (isNhentaiImage) {
+    window.onload = function() {
+        document.querySelector(selectors.NHENTAI).style.width = 'auto'
+        document.querySelector(selectors.NHENTAI).style.maxHeight = '850px'
+        document.querySelector(selectors.NHENTAI).scrollIntoView()
     }
 }
 
@@ -165,57 +185,7 @@ document.onkeydown = function (e) {
         case downloadKey:{
             console.log("Key " + downloadKey + " is pressed")
             if (!alreadyExecutedOnce){
-                switch(currentLocation){
-                    case addresses.BING:
-                        imageSource = document.querySelector(selectors.BING).currentSrc
-                        folderName = folderNames.BING
-                        console.log("Current site is bing")
-                        break
-                    case addresses.CHAN:
-                        imageSource = document.querySelector(selectors.CHAN).currentSrc
-                        folderName = folderNames.CHAN
-                        console.log("Current site is Chan")
-                        break
-                    case addresses.CHAN_IDOL:
-                        imageSource = document.querySelector(selectors.CHAN).currentSrc
-                        folderName = folderNames.CHAN_IDOL
-                        console.log("Current site is Idol")
-                        break
-                    case addresses.REDGIFS:
-                        imageSource = document.querySelector(selectors.REDGIFS).currentSrc
-                        folderName = folderNames.REDGIFS
-                        console.log("Current site is redgifs")
-                        break
-                    case addresses.SANKAKU_WEBSITE:
-                        folderName = folderNames.SANKAKU_WEBSITE
-                        console.log("Current site is Sankaku")
-                        break
-                    case addresses._6GAMES:
-                        imageSource = document.querySelector(selectors._6GAMES).getAttribute(selectors._6GAMES_ATTRIBUTE)
-                        break
-                    case addresses.H_FLASH:
-                        imageSource = document.querySelector(selectors.H_FLASH).src
-                        break
-                    case addresses.PIXIV:
-                        imageSource = document.querySelectorAll(selectors.default)[2].src
-                        folderName = folderNames.PIXIV
-                        // Don't remove the line below, might be used again if pixiv changed the site layout
-                        console.log(document.querySelectorAll(selectors.default))
-                        break
-                    case addresses.PXIMG:
-                        folderName = folderNames.PIXIV
-                        break
-                    case addresses.IREDDIT:
-                        folderName = folderNames.REDDIT
-                        break
-                    case addresses.EXTPREVREDDIT:
-                        folderName = folderNames.REDDIT
-                        break
-                    case addresses.EXHENTAI:
-                        imageSource = document.querySelector(selectors.EXHENTAI).currentSrc
-                        folderName = folderNames.EXHENTAI
-                        break
-                }
+                setSourceAndFolder()
                 // Calls the download function
                 grab_content(imageSource, folderName)
                 // Prevents duplicate download
@@ -228,6 +198,60 @@ document.onkeydown = function (e) {
     }
 }
 
+function setSourceAndFolder() {
+    switch(currentLocation){
+        case addresses.BING:
+            imageSource = document.querySelector(selectors.BING).currentSrc
+            folderName = folderNames.BING
+            break
+        case addresses.CHAN:
+            imageSource = document.querySelector(selectors.CHAN).currentSrc
+            folderName = folderNames.CHAN
+            break
+        case addresses.CHAN_IDOL:
+            imageSource = document.querySelector(selectors.CHAN).currentSrc
+            folderName = folderNames.CHAN_IDOL
+            break
+        case addresses.REDGIFS:
+            imageSource = document.querySelector(selectors.REDGIFS).currentSrc
+            folderName = folderNames.REDGIFS
+            break
+        case addresses.SANKAKU_WEBSITE:
+            folderName = folderNames.SANKAKU_WEBSITE
+            break
+        case addresses._6GAMES:
+            imageSource = document.querySelector(selectors._6GAMES).getAttribute(selectors._6GAMES_ATTRIBUTE)
+            break
+        case addresses.H_FLASH:
+            imageSource = document.querySelector(selectors.H_FLASH).src
+            break
+        case addresses.PIXIV:
+            imageSource = document.querySelectorAll(selectors.default)[2].src
+            folderName = folderNames.PIXIV
+            // Don't remove the line below, might be used again if pixiv changed the site layout
+            console.log(document.querySelectorAll(selectors.default))
+            break
+        case addresses.PXIMG:
+            folderName = folderNames.PIXIV
+            break
+        case addresses.IREDDIT:
+            folderName = folderNames.REDDIT
+            break
+        case addresses.EXTPREVREDDIT:
+            folderName = folderNames.REDDIT
+            break
+        case addresses.EHENTAI: // fallthrough
+        case addresses.EXHENTAI:
+            imageSource = document.querySelector(selectors.EXHENTAI).currentSrc
+            folderName = folderNames.EXHENTAI
+            break
+        case addresses.NHENTAI:
+            imageSource = document.querySelector(selectors.NHENTAI).currentSrc
+            folderName = folderNames.NHENTAI
+            break
+    }
+}
+
 function grab_content(imageSource){
     console.log("Content grabber activated.")
 
@@ -235,11 +259,17 @@ function grab_content(imageSource){
     let fileName = imageSource.replace(/^.*[\\\/]/, '');
 
     if (isExhentaiImage) {
-        console.log(fileName)
+        //console.log(fileName)
         //fileName = document.querySelector("h1").innerHTML.split('\|').join('／').split('\/').join('／').replace(/^.*[\\\/]/, '').concat(" "+fileName)
-        fileName = document.querySelector("h1").innerHTML.replace('\|', '[').replace('\|', ']').replace('\/', '／').replace(/^.*[\\\/]/, '').concat(" "+fileName)
+        //fileName = document.querySelector("h1").innerHTML.replace('\|', '[').replace('\|', ']').replace('\/', '／').replace(/^.*[\\\/]/, '').concat(" "+fileName)
+        fileName = document.querySelector("h1").innerHTML.replace('\|', '[').replace('\|', ']').replace(/^.*[\\\/]/, '').replace(/[|&;$%@"<>()+,]/g, "-").concat(" "+fileName)
         console.log(fileName)
         //console.log(typeof(fileName))
+    } else if (isNhentaiImage) {
+        let title = document.title
+        //console.log(fileName)
+        fileName = title.replace(/[|&;$%@"<>()+,]/g, "-").substring(0, title.indexOf(" - Page")).concat(" "+fileName)
+        console.log(fileName)
     }
 
     if (fileName.indexOf('?') != -1){
