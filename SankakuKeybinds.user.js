@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Sankaku Downloader (Manual)
 // @namespace    http://tampermonkey.net/
-// @version      1.2g-nhentai
+// @version      1.2j-autoclose
 // @description  Added favorite + download keybind for sankaku
 // @author       redrubberband
 // @match        *.bing.com/*
@@ -22,15 +22,29 @@
 
 'use strict'
 
-// !! Default values for reference, do not change. !!
-// You can customize them later below.
-var downloadKey = "x"
-var favoriteKey = "v"
-var timeoutLength = 5000
-var usingCustomFolder = false
-var customFolderName = ""
-var allowRepeatDownloads = false
-var archiveMode = false
+// Change this value to true if you want to customize them
+var using_custom_values        = true
+
+if (using_custom_values) {
+    var downloadKey                 = "x"
+    var favoriteKey                 = "v"
+    var timeoutLength               = 500
+    var usingCustomFolder           = false
+    var customFolderName            = ""
+    var allowRepeatDownloads        = true
+    var quickArchiveMode            = false
+    var autoCloseTab                = true
+} else { // Default values, DO NOT change!
+    downloadKey = "x"
+    favoriteKey = "v"
+    timeoutLength = 5000
+    usingCustomFolder = false
+    customFolderName = ""
+    allowRepeatDownloads = false
+    quickArchiveMode = false
+    autoCloseTab = true
+}
+
 
 // Another init, but unrelated.
 // Still, do not change the values here.
@@ -85,24 +99,16 @@ var isExhentai = ((currentLocation == addresses.EXHENTAI || currentLocation == a
 var isExhentaiImage = ((currentLocation == addresses.EXHENTAI || currentLocation == addresses.EHENTAI) && document.location.href.indexOf("/s/") > -1)
 var isNhentaiImage = (currentLocation == addresses.NHENTAI && document.location.href.indexOf("/g/") > -1)
 
-// Change this value to true if you want to customize them
-var using_custom_values        = true
-
-if (using_custom_values) {
-    downloadKey                 = "x"
-    favoriteKey                 = "v"
-    timeoutLength               = 500
-    usingCustomFolder           = false
-    customFolderName            = ""
-    allowRepeatDownloads        = false
-    archiveMode                 = false
-}
-
 // Init some other default values
 var folderName = folderNames.default
-var imageSource = document.querySelector(selectors.default).currentSrc
 var singleExecution = !allowRepeatDownloads
 var alreadyExecutedOnce = false
+var imageSource
+try{
+    imageSource = document.querySelector(selectors.default).currentSrc
+} catch (err) {
+    imageSource = ""
+}
 
 console.log("Script is loaded")
 
@@ -116,20 +122,22 @@ if (isExhentaiImage) {
         document.querySelector(selectors.EXHENTAI).style.width = 'auto'
         document.querySelector(selectors.EXHENTAI).style.maxHeight = '850px'
         document.querySelector(selectors.EXHENTAI).scrollIntoView()
-        if (archiveMode) {
+        if (quickArchiveMode) {
             setSourceAndFolder()
             grab_content(imageSource, folderName)
             window.close()
         }
     }
 }
+/*
 if (isNhentaiImage) {
     window.onload = function() {
         document.querySelector(selectors.NHENTAI).style.width = 'auto'
-        document.querySelector(selectors.NHENTAI).style.maxHeight = '850px'
+        document.querySelector(selectors.NHENTAI).style.maxHeight = '950px'
         document.querySelector(selectors.NHENTAI).scrollIntoView()
     }
 }
+*/
 
 // Detect keyboard keypress
 document.onkeydown = function (e) {
@@ -229,7 +237,8 @@ function setSourceAndFolder() {
             imageSource = document.querySelectorAll(selectors.default)[2].src
             folderName = folderNames.PIXIV
             // Don't remove the line below, might be used again if pixiv changed the site layout
-            console.log(document.querySelectorAll(selectors.default))
+            //console.log(document.querySelectorAll(selectors.default))
+            //console.log(imageSource)
             break
         case addresses.PXIMG:
             folderName = folderNames.PIXIV
@@ -262,7 +271,7 @@ function grab_content(imageSource){
         //console.log(fileName)
         //fileName = document.querySelector("h1").innerHTML.split('\|').join('／').split('\/').join('／').replace(/^.*[\\\/]/, '').concat(" "+fileName)
         //fileName = document.querySelector("h1").innerHTML.replace('\|', '[').replace('\|', ']').replace('\/', '／').replace(/^.*[\\\/]/, '').concat(" "+fileName)
-        fileName = document.querySelector("h1").innerHTML.replace('\|', '[').replace('\|', ']').replace(/^.*[\\\/]/, '').replace(/[|&;$%@"<>()+,]/g, "-").concat(" "+fileName)
+        fileName = document.querySelector("h1").innerHTML.replace('\|', '[').replace('\|', ']').replace(/^.*[\\\/]/, '').replace(/[:|&;$%@"<>()+,]/g, "-").concat(" "+fileName)
         console.log(fileName)
         //console.log(typeof(fileName))
     } else if (isNhentaiImage) {
@@ -309,6 +318,10 @@ function grab_content(imageSource){
 
     // Copies the image link to clipboard for in case something went wrong
     GM_setClipboard(imageSource)
+
+    if (autoCloseTab) {
+        window.close()
+    }
 }
 
 function notify(fileName){
