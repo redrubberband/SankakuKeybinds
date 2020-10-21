@@ -1,18 +1,22 @@
 // ==UserScript==
 // @name         Sankaku Downloader (Manual)
 // @namespace    http://tampermonkey.net/
-// @version      1.2j-autoclose
+// @version      1.6-betasankaku_stillcannotfavorite
 // @description  Added favorite + download keybind for sankaku
 // @author       redrubberband
 // @match        *.bing.com/*
 // @match        *.nhentai.net/*
 // @match        *.pixiv.net/en/artworks/*
+// @match        *.pornhub.com/*
 // @match        *.redd.it/*
 // @match        *.sankakucomplex.com/*
+// @match        *.tsumino.com/*
+// @match        *.media.tumblr.com/*
 // @match        exhentai.org/*
 // @match        e-hentai.org/*
 // @match        h-flash.com/*
 // @match        i.pximg.net/*
+// @match        puu.sh/*
 // @match        redgifs.com/*
 // @match        6gamesonline.com/*
 // @grant        GM_download
@@ -32,8 +36,8 @@ if (using_custom_values) {
     var usingCustomFolder           = false
     var customFolderName            = ""
     var allowRepeatDownloads        = true
-    var quickArchiveMode            = false
-    var autoCloseTab                = true
+    var quickArchiveMode            = true
+    var autoCloseTab                = false
 } else { // Default values, DO NOT change!
     downloadKey = "x"
     favoriteKey = "v"
@@ -60,36 +64,49 @@ const addresses = {
     _6GAMES             : "6gamesonline.com",
     H_FLASH             : "h-flash.com",
     PIXIV               : "www.pixiv.net",
+    PORNHUB             : "www.pornhub.com",
     PXIMG               : "i.pximg.net",
     IREDDIT             : "i.redd.it",
     EXTPREVREDDIT       : "external-preview.redd.it",
     EXHENTAI            : "exhentai.org",
     EHENTAI             : "e-hentai.org",
-    NHENTAI             : "nhentai.net"
+    NHENTAI             : "nhentai.net",
+    TSUMINO             : "www.tsumino.com",
+    PUUSH               : "puu.sh",
+    TUMBLR_MEDIA_64     : "64.media.tumblr.com",
+    SANKAKU_BETA        : "beta.sankakucomplex.com"
 }
 
 const selectors = {
     BING                : "img.nofocus",
     CHAN                : "#image",
-    REDGIFS             : ".video.media",
     _6GAMES             : "param",
     _6GAMES_ATTRIBUTE   : "value",
     H_FLASH             : "embed",
     EXHENTAI            : "#img",
     NHENTAI             : "#image-container a img",
-    default             : "img"
+    PORNHUB_GIF         : "#gifWebmPlayer",
+    REDGIFS             : ".video.media",
+    TSUMINO             : ".img-responsive.reader-img",
+    SANKAKU_BETA_FAV    : "svg",
+    SANKAKU_BETA_DOWN   : "button",
+    default             : "img",
 }
 
 const folderNames = {
     BING                : "bing",
     CHAN                : "Sankaku Channel",
     CHAN_IDOL           : "Idol Complex",
-    REDGIFS             : "redgifs",
     SANKAKU_WEBSITE     : "Sankaku Website",
     PIXIV               : "Pixiv",
+    PORNHUB             : "PornHub Gifs",
     REDDIT              : "Reddit",
+    REDGIFS             : "redgifs",
     EXHENTAI            : "exhentai",
     NHENTAI             : "nhentai",
+    TSUMINO             : "Tsumino",
+    PUUSH               : "puu.sh",
+    TUMBLR              : "tumblr",
     default             : window.location.hostname
 }
 
@@ -98,6 +115,8 @@ var isBing = (currentLocation == addresses.BING)
 var isExhentai = ((currentLocation == addresses.EXHENTAI || currentLocation == addresses.EHENTAI) && document.location.href.indexOf("/g/") > -1)
 var isExhentaiImage = ((currentLocation == addresses.EXHENTAI || currentLocation == addresses.EHENTAI) && document.location.href.indexOf("/s/") > -1)
 var isNhentaiImage = (currentLocation == addresses.NHENTAI && document.location.href.indexOf("/g/") > -1)
+var isTsuminoImage = (currentLocation == addresses.TSUMINO && document.location.href.indexOf("/Read/Index/") > -1)
+var isBetaSankakuImage = (currentLocation == addresses.SANKAKU_BETA && document.location.href.indexOf("/post/show/") > -1)
 
 // Init some other default values
 var folderName = folderNames.default
@@ -151,6 +170,8 @@ document.onkeydown = function (e) {
             if (isExhentai) {
                 let originalUrl = document.location.href.split("?")
                 window.location = (originalUrl[0].concat("?p=").concat(parseInt(originalUrl[1].replace(/[^0-9]/g,''))-1))
+            } else if (isChan) {
+                document.querySelector(".recommended-prev a").click()
             }
             break
         }
@@ -163,6 +184,8 @@ document.onkeydown = function (e) {
                 } catch (err){
                     window.location = (originalUrl[0].concat("?p=1"))
                 }
+            } else if (isChan) {
+                document.querySelector(".recommended-next a").click()
             }
             break
         }
@@ -184,6 +207,26 @@ document.onkeydown = function (e) {
                 //revert back to default state for repeatability
                 favicon = document.querySelector(".favoriteIcon")
                 break
+            } else if (isBetaSankakuImage) {
+                console.log("is btea sankaku img")
+                let all_buttons = document.querySelectorAll(selectors.SANKAKU_BETA_FAV)
+                let favorite_button
+                // current status as of October 19th 2020
+                switch (all_buttons.length) {
+                    case 43:
+                        favorite_button = all_buttons[17]
+                        break
+                    case 44:
+                        favorite_button = all_buttons[18]
+                        break
+                    case 45:
+                        favorite_button = all_buttons[19]
+                        break
+                }
+                console.log(favorite_button)
+                //favorite_button.dispatchEvent(new Event('click'));
+                favorite_button.dispatchEvent(new MouseEvent("click"));
+                break
             } else {
                 console.log("Website is not Chan / Idol!")
                 break
@@ -192,6 +235,12 @@ document.onkeydown = function (e) {
 
         case downloadKey:{
             console.log("Key " + downloadKey + " is pressed")
+            if (isBetaSankakuImage){
+                // current status as of October 19th 2020
+                let download_button = document.querySelectorAll(selectors.SANKAKU_BETA_DOWN)[3]
+                download_button.click()
+                break
+            }
             if (!alreadyExecutedOnce){
                 setSourceAndFolder()
                 // Calls the download function
@@ -258,11 +307,28 @@ function setSourceAndFolder() {
             imageSource = document.querySelector(selectors.NHENTAI).currentSrc
             folderName = folderNames.NHENTAI
             break
+        case addresses.PORNHUB:
+            imageSource = document.querySelector(selectors.PORNHUB_GIF).querySelectorAll("source")[0].src
+            //imageSource = document.querySelector(selectors.PORNHUB_GIF).querySelectorAll("*")
+            //console.log(document.querySelector(selectors.PORNHUB_GIF).querySelectorAll("source")[0].src)
+            folderName = folderNames.PORNHUB
+            break
+        case addresses.TSUMINO:
+            imageSource = document.querySelector(selectors.TSUMINO).currentSrc
+            folderName = folderNames.TSUMINO
+            break
+        case addresses.PUUSH:
+            folderName = folderNames.PUUSH
+            break
+        case addresses.TUMBLR_MEDIA_64:
+            folderName = folderNames.TUMBLR
+            break
     }
 }
 
 function grab_content(imageSource){
     console.log("Content grabber activated.")
+    console.log(imageSource)
 
     // Cleans the link and get the filename
     let fileName = imageSource.replace(/^.*[\\\/]/, '');
@@ -271,13 +337,17 @@ function grab_content(imageSource){
         //console.log(fileName)
         //fileName = document.querySelector("h1").innerHTML.split('\|').join('／').split('\/').join('／').replace(/^.*[\\\/]/, '').concat(" "+fileName)
         //fileName = document.querySelector("h1").innerHTML.replace('\|', '[').replace('\|', ']').replace('\/', '／').replace(/^.*[\\\/]/, '').concat(" "+fileName)
-        fileName = document.querySelector("h1").innerHTML.replace('\|', '[').replace('\|', ']').replace(/^.*[\\\/]/, '').replace(/[:|&;$%@"<>()+,]/g, "-").concat(" "+fileName)
+        fileName = document.querySelector("h1").innerHTML.replace('\|', '[').replace('\|', ']').replace(/^.*[\\\/]/, '').replace(/[:\/|&;$%@"<>()+,]/g, "-").replace(/^\s+/,"").concat(" "+fileName)
         console.log(fileName)
         //console.log(typeof(fileName))
     } else if (isNhentaiImage) {
         let title = document.title
         //console.log(fileName)
         fileName = title.replace(/[|&;$%@"<>()+,]/g, "-").substring(0, title.indexOf(" - Page")).concat(" "+fileName)
+        console.log(fileName)
+    } else if (isTsuminoImage) {
+        let title = document.title
+        fileName = title.replace(/[|&;$%@"<>()+,/]/g, "-").substring(("Tsumino - Read ").length).concat(" "+fileName)
         console.log(fileName)
     }
 
@@ -302,10 +372,14 @@ function grab_content(imageSource){
             extension = ".jpg"
             fileName = fileName.concat(extension)
         }
+    } else if (isTsuminoImage) {
+        // your usual bad coding habit(tm)
+        fileName = fileName.concat(".jpg")
     }
 
     //let finalFileName = "SKDownloader/" + folderName + "/" + fileName
     let finalFileName = folderName + "/" + fileName
+    //console.log(finalFileName)
 
     let downloadArgs = {
         url: imageSource,
@@ -314,6 +388,7 @@ function grab_content(imageSource){
     }
 
     console.log("Attempting download...")
+    console.log("File name: " + fileName)
     GM_download(downloadArgs)
 
     // Copies the image link to clipboard for in case something went wrong
