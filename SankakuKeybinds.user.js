@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Sankaku Downloader (Manual)
 // @namespace    http://tampermonkey.net/
-// @version      1.6-betasankaku_stillcannotfavorite
+// @version      1.6a-nhentai_resize
 // @description  Added favorite + download keybind for sankaku
 // @author       redrubberband
 // @match        *.bing.com/*
@@ -123,6 +123,7 @@ var folderName = folderNames.default
 var singleExecution = !allowRepeatDownloads
 var alreadyExecutedOnce = false
 var imageSource
+var maxImageHeight = '850px'
 try{
     imageSource = document.querySelector(selectors.default).currentSrc
 } catch (err) {
@@ -139,7 +140,7 @@ if (isExhentaiImage) {
     console.log("Is exhentai image!")
     window.onload = function() {
         document.querySelector(selectors.EXHENTAI).style.width = 'auto'
-        document.querySelector(selectors.EXHENTAI).style.maxHeight = '850px'
+        document.querySelector(selectors.EXHENTAI).style.maxHeight = maxImageHeight
         document.querySelector(selectors.EXHENTAI).scrollIntoView()
         if (quickArchiveMode) {
             setSourceAndFolder()
@@ -148,15 +149,15 @@ if (isExhentaiImage) {
         }
     }
 }
-/*
+
 if (isNhentaiImage) {
     window.onload = function() {
         document.querySelector(selectors.NHENTAI).style.width = 'auto'
-        document.querySelector(selectors.NHENTAI).style.maxHeight = '950px'
+        document.querySelector(selectors.NHENTAI).style.maxHeight = maxImageHeight
         document.querySelector(selectors.NHENTAI).scrollIntoView()
     }
 }
-*/
+
 
 // Detect keyboard keypress
 document.onkeydown = function (e) {
@@ -172,6 +173,10 @@ document.onkeydown = function (e) {
                 window.location = (originalUrl[0].concat("?p=").concat(parseInt(originalUrl[1].replace(/[^0-9]/g,''))-1))
             } else if (isChan) {
                 document.querySelector(".recommended-prev a").click()
+            } else if (isNhentaiImage) {
+                document.querySelector(selectors.NHENTAI).style.width = 'auto'
+                document.querySelector(selectors.NHENTAI).style.maxHeight = maxImageHeight
+                document.querySelector(selectors.NHENTAI).scrollIntoView()
             }
             break
         }
@@ -186,6 +191,10 @@ document.onkeydown = function (e) {
                 }
             } else if (isChan) {
                 document.querySelector(".recommended-next a").click()
+            } else if (isNhentaiImage) {
+                document.querySelector(selectors.NHENTAI).style.width = 'auto'
+                document.querySelector(selectors.NHENTAI).style.maxHeight = maxImageHeight
+                document.querySelector(selectors.NHENTAI).scrollIntoView()
             }
             break
         }
