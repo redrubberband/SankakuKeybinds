@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Sankaku Downloader (Manual)
 // @namespace    http://tampermonkey.net/
-// @version      1.6a-nhentai_resize
+// @version      1.6d-minor fixing
 // @description  Added favorite + download keybind for sankaku
 // @author       redrubberband
 // @match        *.bing.com/*
@@ -14,6 +14,7 @@
 // @match        *.media.tumblr.com/*
 // @match        exhentai.org/*
 // @match        e-hentai.org/*
+// @match        hitomi.la/*
 // @match        h-flash.com/*
 // @match        i.pximg.net/*
 // @match        puu.sh/*
@@ -36,8 +37,8 @@ if (using_custom_values) {
     var usingCustomFolder           = false
     var customFolderName            = ""
     var allowRepeatDownloads        = true
-    var quickArchiveMode            = true
-    var autoCloseTab                = false
+    var exHentaiQuickArchiveMode    = true // instantly downloads after you open the image
+    var autoCloseTabAfterDownload   = false // instantly closes the page after the downloadKey is pressed
 } else { // Default values, DO NOT change!
     downloadKey = "x"
     favoriteKey = "v"
@@ -45,8 +46,8 @@ if (using_custom_values) {
     usingCustomFolder = false
     customFolderName = ""
     allowRepeatDownloads = false
-    quickArchiveMode = false
-    autoCloseTab = true
+    exHentaiQuickArchiveMode = false
+    autoCloseTabAfterDownload = true
 }
 
 
@@ -74,7 +75,8 @@ const addresses = {
     TSUMINO             : "www.tsumino.com",
     PUUSH               : "puu.sh",
     TUMBLR_MEDIA_64     : "64.media.tumblr.com",
-    SANKAKU_BETA        : "beta.sankakucomplex.com"
+    SANKAKU_BETA        : "beta.sankakucomplex.com",
+    HITOMI_LA           : "hitomi.la"
 }
 
 const selectors = {
@@ -90,6 +92,7 @@ const selectors = {
     TSUMINO             : ".img-responsive.reader-img",
     SANKAKU_BETA_FAV    : "svg",
     SANKAKU_BETA_DOWN   : "button",
+    HITOMI_LA           : "#comicImages picture img",
     default             : "img",
 }
 
@@ -107,23 +110,27 @@ const folderNames = {
     TSUMINO             : "Tsumino",
     PUUSH               : "puu.sh",
     TUMBLR              : "tumblr",
+    HITOMI_LA           : "hitomi.la",
     default             : window.location.hostname
 }
 
 var isChan = (currentLocation == addresses.CHAN) || (currentLocation == addresses.CHAN_IDOL)
+var isChanImage = (isChan && document.location.href.indexOf("/post/show") > -1 )
 var isBing = (currentLocation == addresses.BING)
 var isExhentai = ((currentLocation == addresses.EXHENTAI || currentLocation == addresses.EHENTAI) && document.location.href.indexOf("/g/") > -1)
 var isExhentaiImage = ((currentLocation == addresses.EXHENTAI || currentLocation == addresses.EHENTAI) && document.location.href.indexOf("/s/") > -1)
 var isNhentaiImage = (currentLocation == addresses.NHENTAI && document.location.href.indexOf("/g/") > -1)
 var isTsuminoImage = (currentLocation == addresses.TSUMINO && document.location.href.indexOf("/Read/Index/") > -1)
 var isBetaSankakuImage = (currentLocation == addresses.SANKAKU_BETA && document.location.href.indexOf("/post/show/") > -1)
+var isHitomiLaImage = (currentLocation == addresses.HITOMI_LA && document.location.href.indexOf("/reader/") > -1)
 
 // Init some other default values
 var folderName = folderNames.default
 var singleExecution = !allowRepeatDownloads
 var alreadyExecutedOnce = false
 var imageSource
-var maxImageHeight = '850px'
+var maxImageHeight = '550px'
+var maxImageHeight_Chan = '450px'
 try{
     imageSource = document.querySelector(selectors.default).currentSrc
 } catch (err) {
@@ -133,29 +140,42 @@ try{
 console.log("Script is loaded")
 
 // This is my personal script customization which may or may not be suitable for general use.
-if (isChan){
-    document.querySelector(selectors.CHAN).scrollIntoView()
-}
+
 if (isExhentaiImage) {
     console.log("Is exhentai image!")
-    window.onload = function() {
+    window.addEventListener("load", function() {
         document.querySelector(selectors.EXHENTAI).style.width = 'auto'
         document.querySelector(selectors.EXHENTAI).style.maxHeight = maxImageHeight
         document.querySelector(selectors.EXHENTAI).scrollIntoView()
-        if (quickArchiveMode) {
+        if (exHentaiQuickArchiveMode) {
             setSourceAndFolder()
             grab_content(imageSource, folderName)
             window.close()
         }
-    }
+    })
 }
 
-if (isNhentaiImage) {
+else if (isNhentaiImage) {
     window.onload = function() {
         document.querySelector(selectors.NHENTAI).style.width = 'auto'
         document.querySelector(selectors.NHENTAI).style.maxHeight = maxImageHeight
         document.querySelector(selectors.NHENTAI).scrollIntoView()
     }
+}
+
+else if (isChanImage) {
+    document.querySelector(selectors.CHAN).style.width = 'auto'
+    document.querySelector(selectors.CHAN).style.maxHeight = maxImageHeight_Chan
+    if (document.querySelectorAll(".status-notice").length >= 3) {
+        document.querySelectorAll(".status-notice")[2].style.maxHeight = '20px'
+        document.querySelectorAll(".status-notice")[1].style.maxHeight = '20px'
+    }
+    window.addEventListener("load", function() {
+        document.querySelector("#share").remove()
+        document.querySelector("#resized_notice").remove()
+        document.querySelector("#recommended h3").remove()
+    })
+    document.querySelector("#tags").scrollIntoView()
 }
 
 
@@ -332,6 +352,10 @@ function setSourceAndFolder() {
         case addresses.TUMBLR_MEDIA_64:
             folderName = folderNames.TUMBLR
             break
+        case addresses.HITOMI_LA:
+            imageSource = document.querySelector(selectors.HITOMI_LA).currentSrc
+            folderName = folderNames.HITOMI_LA
+            break
     }
 }
 
@@ -346,7 +370,7 @@ function grab_content(imageSource){
         //console.log(fileName)
         //fileName = document.querySelector("h1").innerHTML.split('\|').join('／').split('\/').join('／').replace(/^.*[\\\/]/, '').concat(" "+fileName)
         //fileName = document.querySelector("h1").innerHTML.replace('\|', '[').replace('\|', ']').replace('\/', '／').replace(/^.*[\\\/]/, '').concat(" "+fileName)
-        fileName = document.querySelector("h1").innerHTML.replace('\|', '[').replace('\|', ']').replace(/^.*[\\\/]/, '').replace(/[:\/|&;$%@"<>()+,]/g, "-").replace(/^\s+/,"").concat(" "+fileName)
+        fileName = document.querySelector("h1").innerHTML.replace('\|', '[').replace('\|', ']').replace(/^.*[\\\/]/, '').replace(/[:\/|&;$%@"<>()+,?]/g, "-").replace(/^\s+/,"").concat(" "+fileName)
         console.log(fileName)
         //console.log(typeof(fileName))
     } else if (isNhentaiImage) {
@@ -381,7 +405,7 @@ function grab_content(imageSource){
             extension = ".jpg"
             fileName = fileName.concat(extension)
         }
-    } else if (isTsuminoImage) {
+    } else if (isTsuminoImage || isHitomiLaImage) {
         // your usual bad coding habit(tm)
         fileName = fileName.concat(".jpg")
     }
@@ -397,13 +421,13 @@ function grab_content(imageSource){
     }
 
     console.log("Attempting download...")
-    console.log("File name: " + fileName)
+    console.log("File name: " + finalFileName)
     GM_download(downloadArgs)
 
     // Copies the image link to clipboard for in case something went wrong
     GM_setClipboard(imageSource)
 
-    if (autoCloseTab) {
+    if (autoCloseTabAfterDownload) {
         window.close()
     }
 }
