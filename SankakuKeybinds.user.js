@@ -1,10 +1,11 @@
 // ==UserScript==
-// @name         Sankaku Downloader (Manual)
+// @name         Sankaku Downloader (JQuery)
 // @namespace    http://tampermonkey.net/
-// @version      1.6d-minor fixing
+// @version      1.8-Beginning to move to jquery
 // @description  Added favorite + download keybind for sankaku
 // @author       redrubberband
 // @match        *.bing.com/*
+// @match        *.deltaporno.com/*
 // @match        *.nhentai.net/*
 // @match        *.pixiv.net/en/artworks/*
 // @match        *.pornhub.com/*
@@ -14,6 +15,7 @@
 // @match        *.media.tumblr.com/*
 // @match        exhentai.org/*
 // @match        e-hentai.org/*
+// @match        e621.net/*
 // @match        hitomi.la/*
 // @match        h-flash.com/*
 // @match        i.pximg.net/*
@@ -23,7 +25,18 @@
 // @grant        GM_download
 // @grant        GM_notification
 // @grant        GM_setClipboard
+// @require      https://code.jquery.com/jquery-3.5.1.min.js
+
 // ==/UserScript==
+
+/* Use this in browser console to run JQuery in console
+
+var jqry = document.createElement('script');
+jqry.src = "https://code.jquery.com/jquery-3.5.1.min.js";
+document.getElementsByTagName('head')[0].appendChild(jqry);
+jQuery.noConflict();
+
+*/
 
 'use strict'
 
@@ -37,8 +50,8 @@ if (using_custom_values) {
     var usingCustomFolder           = false
     var customFolderName            = ""
     var allowRepeatDownloads        = true
-    var exHentaiQuickArchiveMode    = true // instantly downloads after you open the image
-    var autoCloseTabAfterDownload   = false // instantly closes the page after the downloadKey is pressed
+    var exHentaiQuickArchiveMode    = false // instantly downloads after you open the image
+    var autoCloseTabAfterDownload   = false // instantly closes the page after the downloadKey is pressed // always true for exhentai and sankaku website
 } else { // Default values, DO NOT change!
     downloadKey = "x"
     favoriteKey = "v"
@@ -76,7 +89,9 @@ const addresses = {
     PUUSH               : "puu.sh",
     TUMBLR_MEDIA_64     : "64.media.tumblr.com",
     SANKAKU_BETA        : "beta.sankakucomplex.com",
-    HITOMI_LA           : "hitomi.la"
+    HITOMI_LA           : "hitomi.la",
+    DELTAPORNO          : "gallery.deltaporno.com",
+    E621                : "e621.net"
 }
 
 const selectors = {
@@ -93,6 +108,8 @@ const selectors = {
     SANKAKU_BETA_FAV    : "svg",
     SANKAKU_BETA_DOWN   : "button",
     HITOMI_LA           : "#comicImages picture img",
+    DELTAPORNO          : "#image-viewer-container img",
+    E621                : "#image",
     default             : "img",
 }
 
@@ -111,6 +128,8 @@ const folderNames = {
     PUUSH               : "puu.sh",
     TUMBLR              : "tumblr",
     HITOMI_LA           : "hitomi.la",
+    DELTAPORNO          : "deltaporno",
+    E621                : "e621",
     default             : window.location.hostname
 }
 
@@ -123,14 +142,17 @@ var isNhentaiImage = (currentLocation == addresses.NHENTAI && document.location.
 var isTsuminoImage = (currentLocation == addresses.TSUMINO && document.location.href.indexOf("/Read/Index/") > -1)
 var isBetaSankakuImage = (currentLocation == addresses.SANKAKU_BETA && document.location.href.indexOf("/post/show/") > -1)
 var isHitomiLaImage = (currentLocation == addresses.HITOMI_LA && document.location.href.indexOf("/reader/") > -1)
+var isE621Image = (currentLocation == addresses.E621 && document.location.href.indexOf("/posts/") > -1)
 
 // Init some other default values
 var folderName = folderNames.default
 var singleExecution = !allowRepeatDownloads
 var alreadyExecutedOnce = false
 var imageSource
-var maxImageHeight = '550px'
+var maxImageHeight_Nhentai = '750px'
+var maxImageHeight_Exhentai = '550px'
 var maxImageHeight_Chan = '450px'
+var maxImageHeight_E621 = '850px'
 try{
     imageSource = document.querySelector(selectors.default).currentSrc
 } catch (err) {
@@ -142,39 +164,123 @@ console.log("Script is loaded")
 // This is my personal script customization which may or may not be suitable for general use.
 
 if (isExhentaiImage) {
+    autoCloseTabAfterDownload = true
     console.log("Is exhentai image!")
     window.addEventListener("load", function() {
         document.querySelector(selectors.EXHENTAI).style.width = 'auto'
-        document.querySelector(selectors.EXHENTAI).style.maxHeight = maxImageHeight
+        document.querySelector(selectors.EXHENTAI).style.maxHeight = maxImageHeight_Exhentai
         document.querySelector(selectors.EXHENTAI).scrollIntoView()
         if (exHentaiQuickArchiveMode) {
             setSourceAndFolder()
             grab_content(imageSource, folderName)
             window.close()
         }
+        console.log("onLoad event completed")
     })
 }
 
 else if (isNhentaiImage) {
     window.onload = function() {
         document.querySelector(selectors.NHENTAI).style.width = 'auto'
-        document.querySelector(selectors.NHENTAI).style.maxHeight = maxImageHeight
+        document.querySelector(selectors.NHENTAI).style.maxHeight = maxImageHeight_Nhentai
         document.querySelector(selectors.NHENTAI).scrollIntoView()
     }
+
+    // THIS ISN'T AN IDEAL SOLUTION BUT IT WORKS FOR NOW
+    document.querySelector("a.next").addEventListener("click", function() {
+        document.querySelector(selectors.NHENTAI).style.width = 'auto'
+        document.querySelector(selectors.NHENTAI).style.maxHeight = maxImageHeight_Nhentai
+        document.querySelector(selectors.NHENTAI).scrollIntoView()
+        document.querySelector("a.next").addEventListener("click", function() {
+            document.querySelector(selectors.NHENTAI).style.width = 'auto'
+            document.querySelector(selectors.NHENTAI).style.maxHeight = maxImageHeight_Nhentai
+            document.querySelector(selectors.NHENTAI).scrollIntoView()
+        })
+    })
+
+    // THIS ISN'T AN IDEAL SOLUTION BUT IT WORKS FOR NOW
+    document.querySelector("a.previous").addEventListener("click", function() {
+        document.querySelector(selectors.NHENTAI).style.width = 'auto'
+        document.querySelector(selectors.NHENTAI).style.maxHeight = maxImageHeight_Nhentai
+        document.querySelector(selectors.NHENTAI).scrollIntoView()
+        document.querySelector("a.previous").addEventListener("click", function() {
+            document.querySelector(selectors.NHENTAI).style.width = 'auto'
+            document.querySelector(selectors.NHENTAI).style.maxHeight = maxImageHeight_Nhentai
+            document.querySelector(selectors.NHENTAI).scrollIntoView()
+        })
+    })
 }
 
 else if (isChanImage) {
+    // For now, this jumbled mess is kept for backup purposes.
+
+    //for (var i=0; i<(document.querySelectorAll(".status-notice").length); i++){
+    //    document.querySelectorAll(".status-notice")[i].style.maxHeight = '20px'
+    //}
+    //document.querySelector("#sp1").remove()
+    //document.querySelector("#sp1 iframe").height = 80
+    //window.addEventListener("load", function() {
+    //    document.querySelector("#sp1").remove()
+    //    document.querySelector("#sp1 iframe").height = 80
+    //    document.querySelector("#share").remove()
+    //    document.querySelector("#resized_notice").remove()
+    //    if (document.querySelector("#recommended h3") != null)
+    //        document.querySelector("#recommended h3").remove()
+    //})
+
+    window.addEventListener("load", function(){
+
+        // Resize the image to fit your screen
+        $(selectors.CHAN).css("width", "auto")
+        $(selectors.CHAN).css("maxHeight", maxImageHeight_Chan)
+
+        // Hide EVERY SINGLE #sp1 (fucking duplicate IDs, man)
+        // (it's the "Hide ads" one with huge empty space if you have adblocker)
+        $('div[id="sp1"]').hide()
+
+        // Make the top box appear transparent
+        $(".status-notice").not("#notice").css("background-color", "rgb(255,255,255)")
+        $(".status-notice").not("#notice").css("border-style", "none")
+
+        // Hide various top texts
+        $("#pending-notice").hide()
+        $(".status-notice div").not("#parent-preview").not("#child-preview").hide()
+
+        // Remove the padding and margins
+        $(".status-notice").css("padding", "0 0 0 0")
+        $(".status-notice").css("margin", "0 0 0 0")
+
+        $(".status-notice").css("height", "150")
+
+        // Remove the "Get plus" ad
+        $("#has-mail-notice").hide()
+
+        // Cram more images into the page
+        $("#share").hide()
+        $("#recommended h3").hide()
+
+        // jQuery doesn't work with this somehow. Don't change.
+        document.querySelector("#tags").scrollIntoView()
+    })
+}
+
+else if (isE621Image) {
     document.querySelector(selectors.CHAN).style.width = 'auto'
-    document.querySelector(selectors.CHAN).style.maxHeight = maxImageHeight_Chan
-    if (document.querySelectorAll(".status-notice").length >= 3) {
-        document.querySelectorAll(".status-notice")[2].style.maxHeight = '20px'
-        document.querySelectorAll(".status-notice")[1].style.maxHeight = '20px'
+    document.querySelector(selectors.CHAN).style.maxHeight = maxImageHeight_E621
+
+    /*
+    for (var i=0; i<(document.querySelectorAll(".status-notice").length); i++){
+        document.querySelectorAll(".status-notice")[i].style.maxHeight = '20px'
     }
+    document.querySelector("#sp1").remove()
     window.addEventListener("load", function() {
+        document.querySelector("#sp1").remove()
         document.querySelector("#share").remove()
         document.querySelector("#resized_notice").remove()
-        document.querySelector("#recommended h3").remove()
+        if (document.querySelector("#recommended h3") != null)
+            document.querySelector("#recommended h3").remove()
     })
+    */
     document.querySelector("#tags").scrollIntoView()
 }
 
@@ -195,7 +301,7 @@ document.onkeydown = function (e) {
                 document.querySelector(".recommended-prev a").click()
             } else if (isNhentaiImage) {
                 document.querySelector(selectors.NHENTAI).style.width = 'auto'
-                document.querySelector(selectors.NHENTAI).style.maxHeight = maxImageHeight
+                document.querySelector(selectors.NHENTAI).style.maxHeight = maxImageHeight_Nhentai
                 document.querySelector(selectors.NHENTAI).scrollIntoView()
             }
             break
@@ -209,11 +315,11 @@ document.onkeydown = function (e) {
                 } catch (err){
                     window.location = (originalUrl[0].concat("?p=1"))
                 }
-            } else if (isChan) {
-                document.querySelector(".recommended-next a").click()
+            //} else if (isChan) {
+            //    document.querySelector(".recommended-next a").click()
             } else if (isNhentaiImage) {
                 document.querySelector(selectors.NHENTAI).style.width = 'auto'
-                document.querySelector(selectors.NHENTAI).style.maxHeight = maxImageHeight
+                document.querySelector(selectors.NHENTAI).style.maxHeight = maxImageHeight_Nhentai
                 document.querySelector(selectors.NHENTAI).scrollIntoView()
             }
             break
@@ -229,7 +335,8 @@ document.onkeydown = function (e) {
                 //check if fav-icon is already favorited
                 if (currStyle.getPropertyValue("display") == "none"){
                     console.log("Changing favorite value...")
-                    favicon = document.querySelector(".favoriteIcon.clicked")
+                    // commented to prevent accidental unfavorite
+                    //favicon = document.querySelector(".favoriteIcon.clicked")
                     //console.log(favicon)
                 }
                 favicon.click()
@@ -237,7 +344,7 @@ document.onkeydown = function (e) {
                 favicon = document.querySelector(".favoriteIcon")
                 break
             } else if (isBetaSankakuImage) {
-                console.log("is btea sankaku img")
+                console.log("is beta sankaku img")
                 let all_buttons = document.querySelectorAll(selectors.SANKAKU_BETA_FAV)
                 let favorite_button
                 // current status as of October 19th 2020
@@ -256,8 +363,12 @@ document.onkeydown = function (e) {
                 //favorite_button.dispatchEvent(new Event('click'));
                 favorite_button.dispatchEvent(new MouseEvent("click"));
                 break
+            } else if (isE621Image){
+                let fav_button = document.querySelector("#add-to-favorites")
+                fav_button.click()
+                break
             } else {
-                console.log("Website is not Chan / Idol!")
+                console.log("Website is not Chan / Idol / E621!")
                 break
             }
         }
@@ -304,6 +415,7 @@ function setSourceAndFolder() {
             break
         case addresses.SANKAKU_WEBSITE:
             folderName = folderNames.SANKAKU_WEBSITE
+            autoCloseTabAfterDownload = true
             break
         case addresses._6GAMES:
             imageSource = document.querySelector(selectors._6GAMES).getAttribute(selectors._6GAMES_ATTRIBUTE)
@@ -356,6 +468,14 @@ function setSourceAndFolder() {
             imageSource = document.querySelector(selectors.HITOMI_LA).currentSrc
             folderName = folderNames.HITOMI_LA
             break
+        case addresses.DELTAPORNO:
+            imageSource = document.querySelector(selectors.DELTAPORNO).currentSrc
+            folderName = folderNames.DELTAPORNO
+            break
+        case addresses.E621:
+            imageSource = document.querySelector(selectors.E621).currentSrc
+            folderName = folderNames.E621
+            break
     }
 }
 
@@ -376,7 +496,7 @@ function grab_content(imageSource){
     } else if (isNhentaiImage) {
         let title = document.title
         //console.log(fileName)
-        fileName = title.replace(/[|&;$%@"<>()+,]/g, "-").substring(0, title.indexOf(" - Page")).concat(" "+fileName)
+        fileName = title.replace(/[|&;$?%@"<>()+,]/g, "-").substring(0, title.indexOf(" - Page")).concat(" "+fileName)
         console.log(fileName)
     } else if (isTsuminoImage) {
         let title = document.title
