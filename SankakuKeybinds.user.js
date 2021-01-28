@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Sankaku Downloader (JQuery)
 // @namespace    http://tampermonkey.net/
-// @version      1.9 - finally nhentai resizing is done.
+// @version      1.9a - finally nhentai resizing is done.
 // @description  Added favorite + download keybind for sankaku
 // @author       redrubberband
 // @match        *.bing.com/*
@@ -165,8 +165,6 @@ var isBetaSankakuImage = (currentLocation == addresses.SANKAKU_BETA && document.
 var isHitomiLaImage = (currentLocation == addresses.HITOMI_LA && document.location.href.indexOf("/reader/") > -1)
 var isE621Image = (currentLocation == addresses.E621 && document.location.href.indexOf("/posts/") > -1)
 
-var isFacebookImage = (currentLocation == "www.facebook.com" && document.location.href.indexOf("photo.php?") > -1)
-
 // Init some other global default values
 var folderName = folderNames.default
 var singleExecutionOnly = !allowRepeatDownloads
@@ -236,17 +234,6 @@ else if (isChanImage) {
     })
 }
 
-else if (isChan) {
-    window.addEventListener("load", function(){
-
-        // Hide EVERY SINGLE #sp1
-        $('div[id="sp1"]').hide()
-
-        // Remove the "Get plus" ad
-        $("#has-mail-notice").hide()
-    })
-}
-
 else if (isE621Image) {
     $("#img").css("width", 'auto')
     $("#img").css("maxHeight", maxImageHeight.E621)
@@ -263,6 +250,17 @@ else if (isNhentaiImage) {
         render_nhentai()
     })
     
+}
+
+else if (isChan) {
+    window.addEventListener("load", function(){
+
+        // Hide EVERY SINGLE #sp1
+        $('div[id="sp1"]').hide()
+
+        // Remove the "Get plus" ad
+        $("#has-mail-notice").hide()
+    })
 }
 
 // Detect keyboard keypress
