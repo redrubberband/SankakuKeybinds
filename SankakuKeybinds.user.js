@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Sankaku Downloader (JQuery)
 // @namespace    http://tampermonkey.net/
-// @version      1.8-Beginning to move to jquery
+// @version      1.8c-added instagram
 // @description  Added favorite + download keybind for sankaku
 // @author       redrubberband
 // @match        *.bing.com/*
@@ -22,6 +22,8 @@
 // @match        puu.sh/*
 // @match        redgifs.com/*
 // @match        6gamesonline.com/*
+// @match        *.facebook.com/*
+// @match        *.instagram.com/*
 // @grant        GM_download
 // @grant        GM_notification
 // @grant        GM_setClipboard
@@ -39,6 +41,8 @@ jQuery.noConflict();
 */
 
 'use strict'
+
+//var $ = window.jQuery
 
 // Change this value to true if you want to customize them
 var using_custom_values        = true
@@ -100,7 +104,7 @@ const selectors = {
     _6GAMES             : "param",
     _6GAMES_ATTRIBUTE   : "value",
     H_FLASH             : "embed",
-    EXHENTAI            : "#img",
+    EXHENTAI            : "a img#img",
     NHENTAI             : "#image-container a img",
     PORNHUB_GIF         : "#gifWebmPlayer",
     REDGIFS             : ".video.media",
@@ -144,13 +148,15 @@ var isBetaSankakuImage = (currentLocation == addresses.SANKAKU_BETA && document.
 var isHitomiLaImage = (currentLocation == addresses.HITOMI_LA && document.location.href.indexOf("/reader/") > -1)
 var isE621Image = (currentLocation == addresses.E621 && document.location.href.indexOf("/posts/") > -1)
 
+var isFacebookImage = (currentLocation == "www.facebook.com" && document.location.href.indexOf("photo.php?") > -1)
+
 // Init some other default values
 var folderName = folderNames.default
 var singleExecution = !allowRepeatDownloads
 var alreadyExecutedOnce = false
 var imageSource
 var maxImageHeight_Nhentai = '750px'
-var maxImageHeight_Exhentai = '550px'
+
 var maxImageHeight_Chan = '450px'
 var maxImageHeight_E621 = '850px'
 try{
@@ -167,8 +173,9 @@ if (isExhentaiImage) {
     autoCloseTabAfterDownload = true
     console.log("Is exhentai image!")
     window.addEventListener("load", function() {
-        document.querySelector(selectors.EXHENTAI).style.width = 'auto'
-        document.querySelector(selectors.EXHENTAI).style.maxHeight = maxImageHeight_Exhentai
+        $(selectors.EXHENTAI).css("width", 'auto')
+        $(selectors.EXHENTAI).css("maxHeight", 550)
+
         document.querySelector(selectors.EXHENTAI).scrollIntoView()
         if (exHentaiQuickArchiveMode) {
             setSourceAndFolder()
@@ -177,6 +184,10 @@ if (isExhentaiImage) {
         }
         console.log("onLoad event completed")
     })
+}
+
+else if (isFacebookImage) {
+
 }
 
 else if (isNhentaiImage) {
@@ -228,8 +239,11 @@ else if (isChanImage) {
     //        document.querySelector("#recommended h3").remove()
     //})
 
-    window.addEventListener("load", function(){
+    // I'll put this outside the onload listener just in case.
+    $('div[id="sp1"]').hide()
 
+    window.addEventListener("load", function(){
+        let top_box = $(".status-notice").not("#notice")
         // Resize the image to fit your screen
         $(selectors.CHAN).css("width", "auto")
         $(selectors.CHAN).css("maxHeight", maxImageHeight_Chan)
@@ -239,18 +253,19 @@ else if (isChanImage) {
         $('div[id="sp1"]').hide()
 
         // Make the top box appear transparent
-        $(".status-notice").not("#notice").css("background-color", "rgb(255,255,255)")
-        $(".status-notice").not("#notice").css("border-style", "none")
+        top_box.css("background-color", "rgb(255,255,255)")
+        top_box.not("#notice").css("border-style", "none")
 
         // Hide various top texts
         $("#pending-notice").hide()
         $(".status-notice div").not("#parent-preview").not("#child-preview").hide()
 
+        // Make the parent/child post height smaller
+        top_box.css("height", "150")
+
         // Remove the padding and margins
         $(".status-notice").css("padding", "0 0 0 0")
         $(".status-notice").css("margin", "0 0 0 0")
-
-        $(".status-notice").css("height", "150")
 
         // Remove the "Get plus" ad
         $("#has-mail-notice").hide()
@@ -261,6 +276,17 @@ else if (isChanImage) {
 
         // jQuery doesn't work with this somehow. Don't change.
         document.querySelector("#tags").scrollIntoView()
+    })
+}
+
+else if (isChan) {
+    window.addEventListener("load", function(){
+
+        // Hide EVERY SINGLE #sp1
+        $('div[id="sp1"]').hide()
+
+        // Remove the "Get plus" ad
+        $("#has-mail-notice").hide()
     })
 }
 
@@ -475,6 +501,14 @@ function setSourceAndFolder() {
         case addresses.E621:
             imageSource = document.querySelector(selectors.E621).currentSrc
             folderName = folderNames.E621
+            break
+        case "www.facebook.com":
+            imageSource = document.querySelector("img").currentSrc
+            folderName = "facebook"
+            break
+        case "www.instagram.com":
+            imageSource = document.querySelector("article div div div div img").src
+            folderName = "instagram"
             break
     }
 }
