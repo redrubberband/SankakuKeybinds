@@ -1,13 +1,11 @@
 // ==UserScript==
 // @name         Sankaku Downloader (JQuery)
 // @namespace    http://tampermonkey.net/
-// @version      1.8d-another jQuery addition
+// @version      1.8e-another jquery and disabled several sites
 // @description  Added favorite + download keybind for sankaku
 // @author       redrubberband
 // @match        *.bing.com/*
-// @match        *.deltaporno.com/*
 // @match        *.nhentai.net/*
-// @match        *.pixiv.net/en/artworks/*
 // @match        *.pornhub.com/*
 // @match        *.redd.it/*
 // @match        *.sankakucomplex.com/*
@@ -17,19 +15,28 @@
 // @match        e-hentai.org/*
 // @match        e621.net/*
 // @match        hitomi.la/*
-// @match        h-flash.com/*
 // @match        i.pximg.net/*
 // @match        puu.sh/*
 // @match        redgifs.com/*
-// @match        6gamesonline.com/*
 // @match        *.facebook.com/*
 // @match        *.instagram.com/*
 // @grant        GM_download
-// @grant        GM_notification
-// @grant        GM_setClipboard
 // @require      https://code.jquery.com/jquery-3.5.1.min.js
 
+
 // ==/UserScript==
+
+/*  These sites are (partially) supported but disabled. 
+    Features are also disabled because it's unused.
+    If you want to enable them, just move them above, near lines of "@match" for sites or "@grant" for features.
+    If you re-enabled features, please uncomment the lines down below. Just ctrl+f for the respective function name. */
+
+// @match        *.deltaporno.com/*
+// @match        *.pixiv.net/en/artworks/*
+// @match        6gamesonline.com/*
+// @match        h-flash.com/*
+// @grant        GM_notification
+// @grant        GM_setClipboard
 
 /* Use this in browser console to run JQuery in console
 
@@ -42,7 +49,7 @@ jQuery.noConflict();
 
 'use strict'
 
-var $ = window.jQuery
+var $ = window.jQuery   // Hide those pesky "$ is not defined" warnings
 
 // Change this value to true if you want to customize them
 var using_custom_values        = true
@@ -137,6 +144,13 @@ const folderNames = {
     default             : window.location.hostname
 }
 
+const maxImageHeight = {
+    CHAN    : 450,
+    NHENTAI : 750,
+    E621    : 850,
+    EXHENTAI: 550
+}
+
 var isChan = (currentLocation == addresses.CHAN) || (currentLocation == addresses.CHAN_IDOL)
 var isChanImage = (isChan && document.location.href.indexOf("/post/show") > -1 )
 var isBing = (currentLocation == addresses.BING)
@@ -150,15 +164,11 @@ var isE621Image = (currentLocation == addresses.E621 && document.location.href.i
 
 var isFacebookImage = (currentLocation == "www.facebook.com" && document.location.href.indexOf("photo.php?") > -1)
 
-// Init some other default values
+// Init some other global default values
 var folderName = folderNames.default
 var singleExecutionOnly = !allowRepeatDownloads
 var alreadyExecutedOnce = false
 var imageSource
-var maxImageHeight_Nhentai = '750px'
-
-var maxImageHeight_Chan = '450px'
-var maxImageHeight_E621 = '850px'
 try{
     imageSource = document.querySelector(selectors.default).currentSrc
 } catch (err) {
@@ -167,13 +177,11 @@ try{
 
 console.log("Script is loaded")
 
-// This is my personal script customization which may or may not be suitable for general use.
-
 if (isExhentaiImage) {
     autoCloseTabAfterDownload = true
     window.addEventListener("load", function() {
         $(selectors.EXHENTAI).css("width", 'auto')
-        $(selectors.EXHENTAI).css("maxHeight", 550)
+        $(selectors.EXHENTAI).css("maxHeight", maxImageHeight.EXHENTAI)
 
         $(selectors.EXHENTAI)[0].scrollIntoView()
         if (exHentaiQuickArchiveMode) {
@@ -192,7 +200,7 @@ else if (isChanImage) {
         let top_box = $(".status-notice").not("#notice")
         // Resize the image to fit your screen
         $(selectors.CHAN).css("width", "auto")
-        $(selectors.CHAN).css("maxHeight", maxImageHeight_Chan)
+        $(selectors.CHAN).css("maxHeight", maxImageHeight.CHAN)
 
         // Hide EVERY SINGLE #sp1 (fucking duplicate IDs, man)
         // (it's the "Hide ads" one with huge empty space if you have adblocker)
@@ -238,16 +246,11 @@ else if (isChan) {
 
 else if (isE621Image) {
     $("#img").css("width", 'auto')
-    $("#img").css("maxHeight", 850)
+    $("#img").css("maxHeight", maxImageHeight.E621)
     $("#tags")[0].scrollIntoView()
 }
 
 else if (isNhentaiImage) {
-
-    let nhentai_selector = "#image-container a img"
-    $(nhentai_selector).change(function() {
-        window.alert("YEEEAAAAAH")
-    })
 
     // $( "select" ) .change(function () {
     //     document.getElementById("loc").innerHTML="You selected: "+document.getElementById("se").value;
@@ -255,23 +258,18 @@ else if (isNhentaiImage) {
 
     window.onload = function() {
         document.querySelector(selectors.NHENTAI).style.width = 'auto'
-        document.querySelector(selectors.NHENTAI).style.maxHeight = maxImageHeight_Nhentai
+        document.querySelector(selectors.NHENTAI).style.maxHeight = maxImageHeight.NHENTAI
         document.querySelector(selectors.NHENTAI).scrollIntoView()
     }
 
-    $("a.next").on("click", function() {
-        $(nhentai_selector).css("width", 'auto')
-        $(nhentai_selector).css("maxHeight", 750)
-        document.querySelector(selectors.NHENTAI).scrollIntoView()
-    })
     // THIS ISN'T AN IDEAL SOLUTION BUT IT WORKS FOR NOW
     document.querySelector("a.next").addEventListener("click", function() {
         document.querySelector(selectors.NHENTAI).style.width = 'auto'
-        document.querySelector(selectors.NHENTAI).style.maxHeight = maxImageHeight_Nhentai
+        document.querySelector(selectors.NHENTAI).style.maxHeight = maxImageHeight.NHENTAI
         document.querySelector(selectors.NHENTAI).scrollIntoView()
         document.querySelector("a.next").addEventListener("click", function() {
             document.querySelector(selectors.NHENTAI).style.width = 'auto'
-            document.querySelector(selectors.NHENTAI).style.maxHeight = maxImageHeight_Nhentai
+            document.querySelector(selectors.NHENTAI).style.maxHeight = maxImageHeight.NHENTAI
             document.querySelector(selectors.NHENTAI).scrollIntoView()
         })
     })
@@ -279,11 +277,11 @@ else if (isNhentaiImage) {
     // THIS ISN'T AN IDEAL SOLUTION BUT IT WORKS FOR NOW
     document.querySelector("a.previous").addEventListener("click", function() {
         document.querySelector(selectors.NHENTAI).style.width = 'auto'
-        document.querySelector(selectors.NHENTAI).style.maxHeight = maxImageHeight_Nhentai
+        document.querySelector(selectors.NHENTAI).style.maxHeight = maxImageHeight.NHENTAI
         document.querySelector(selectors.NHENTAI).scrollIntoView()
         document.querySelector("a.previous").addEventListener("click", function() {
             document.querySelector(selectors.NHENTAI).style.width = 'auto'
-            document.querySelector(selectors.NHENTAI).style.maxHeight = maxImageHeight_Nhentai
+            document.querySelector(selectors.NHENTAI).style.maxHeight = maxImageHeight.NHENTAI
             document.querySelector(selectors.NHENTAI).scrollIntoView()
         })
     })
@@ -305,7 +303,7 @@ document.onkeydown = function (e) {
                 $(".recommended-prev a").click()
             } else if (isNhentaiImage) {
                 $(selectors.NHENTAI).css("width", 'auto')
-                $(selectors.NHENTAI).css("maxHeight", 750)
+                $(selectors.NHENTAI).css("maxHeight", maxImageHeight.NHENTAI)
                 $(selectors.NHENTAI)[0].scrollIntoView()
             }
             break
@@ -322,7 +320,7 @@ document.onkeydown = function (e) {
                 $(".recommended-next a").click()
             } else if (isNhentaiImage) {
                 $(selectors.NHENTAI).css("width", 'auto')
-                $(selectors.NHENTAI).css("maxHeight", 750)
+                $(selectors.NHENTAI).css("maxHeight", maxImageHeight.NHENTAI)
                 $(selectors.NHENTAI)[0].scrollIntoView()
             }
             break
@@ -331,12 +329,12 @@ document.onkeydown = function (e) {
         case favoriteKey:{
             console.log("Key " + favoriteKey + " is pressed")
             if (isChan){
-                // DO NOT CONVERT TO JQUERY
-                // The computed style is not working properly with jQuery.
+                /* DO NOT CONVERT TO JQUERY
+                   The computed style is not working properly with jQuery. */
                 var favorite_icon           = document.querySelector(".favoriteIcon")
                 let available_to_favorite   = document.querySelector("#add-to-favs")
                 let current_style           = window.getComputedStyle(available_to_favorite) // Check if fav-icon is hidden
-                // !!-- Commented to prevent accidental unfavorite, uncomment it to use the unfavorite function --!!
+                /* !!-- Commented to prevent accidental unfavorite, uncomment it to use the unfavorite function --!! */
                 // if (current_style.getPropertyValue("display") == "none"){ // Check if fav-icon is already favorited 
                 //     console.log("Changing favorite value...")
                 //     favorite_icon = document.querySelector(".favoriteIcon.clicked")
@@ -347,7 +345,7 @@ document.onkeydown = function (e) {
                 break  
 
             } else if (isBetaSankakuImage) {
-                // Not going to convert this one to jQuery as I don't really have any use for this version as of now.
+                // Not going to convert this one to jQuery as I don't really have any use for this beta site as of now.
                 let all_buttons = document.querySelectorAll(selectors.SANKAKU_BETA_FAV)
                 let favorite_button
                 // Current status as of October 19th 2020
@@ -403,19 +401,19 @@ document.onkeydown = function (e) {
 function setSourceAndFolder() {
     switch(currentLocation){
         case addresses.BING:
-            imageSource =$(selectors.BING).currentSrc
+            imageSource = document.querySelector(selectors.BING).currentSrc
             folderName = folderNames.BING
             break
         case addresses.CHAN:
-            imageSource = $(selectors.CHAN).currentSrc
+            imageSource = document.querySelector(selectors.CHAN).currentSrc
             folderName = folderNames.CHAN
             break
         case addresses.CHAN_IDOL:
-            imageSource = $(selectors.CHAN).currentSrc
+            imageSource = document.querySelector(selectors.CHAN).currentSrc
             folderName = folderNames.CHAN_IDOL
             break
         case addresses.REDGIFS:
-            imageSource = $(selectors.REDGIFS).currentSrc
+            imageSource = document.querySelector(selectors.REDGIFS).currentSrc
             folderName = folderNames.REDGIFS
             break
         case addresses.SANKAKU_WEBSITE:
@@ -558,16 +556,16 @@ function grab_content(imageSource){
     GM_download(downloadArgs)
 
     // Copies the image link to clipboard for in case something went wrong
-    GM_setClipboard(imageSource)
+    //GM_setClipboard(imageSource)
 
     if (autoCloseTabAfterDownload) {
         window.close()
     }
 }
 
-function notify(fileName){
-    return GM_notification({
-        text:"Download finished " + fileName,
-        timeout:timeoutLength
-    })
-}
+// function notify(fileName){
+//     return GM_notification({
+//         text:"Download finished " + fileName,
+//         timeout:timeoutLength
+//     })
+// }
