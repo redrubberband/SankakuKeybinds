@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Sankaku Downloader (JQuery)
 // @namespace    http://tampermonkey.net/
-// @version      1.8e-another jquery and disabled several sites
+// @version      1.9 - finally nhentai resizing is done.
 // @description  Added favorite + download keybind for sankaku
 // @author       redrubberband
 // @match        *.bing.com/*
@@ -255,39 +255,14 @@ else if (isE621Image) {
 
 else if (isNhentaiImage) {
 
-    // $( "select" ) .change(function () {
-    //     document.getElementById("loc").innerHTML="You selected: "+document.getElementById("se").value;
-    //     });
-
     window.onload = function() {
-        document.querySelector(selectors.NHENTAI).style.width = 'auto'
-        document.querySelector(selectors.NHENTAI).style.maxHeight = maxImageHeight.NHENTAI
-        document.querySelector(selectors.NHENTAI).scrollIntoView()
+        render_nhentai()
     }
 
-    // THIS ISN'T AN IDEAL SOLUTION BUT IT WORKS FOR NOW
-    document.querySelector("a.next").addEventListener("click", function() {
-        document.querySelector(selectors.NHENTAI).style.width = 'auto'
-        document.querySelector(selectors.NHENTAI).style.maxHeight = maxImageHeight.NHENTAI
-        document.querySelector(selectors.NHENTAI).scrollIntoView()
-        document.querySelector("a.next").addEventListener("click", function() {
-            document.querySelector(selectors.NHENTAI).style.width = 'auto'
-            document.querySelector(selectors.NHENTAI).style.maxHeight = maxImageHeight.NHENTAI
-            document.querySelector(selectors.NHENTAI).scrollIntoView()
-        })
+    $("body #content #image-container").on('click', function() {
+        render_nhentai()
     })
-
-    // THIS ISN'T AN IDEAL SOLUTION BUT IT WORKS FOR NOW
-    document.querySelector("a.previous").addEventListener("click", function() {
-        document.querySelector(selectors.NHENTAI).style.width = 'auto'
-        document.querySelector(selectors.NHENTAI).style.maxHeight = maxImageHeight.NHENTAI
-        document.querySelector(selectors.NHENTAI).scrollIntoView()
-        document.querySelector("a.previous").addEventListener("click", function() {
-            document.querySelector(selectors.NHENTAI).style.width = 'auto'
-            document.querySelector(selectors.NHENTAI).style.maxHeight = maxImageHeight.NHENTAI
-            document.querySelector(selectors.NHENTAI).scrollIntoView()
-        })
-    })
+    
 }
 
 // Detect keyboard keypress
@@ -305,9 +280,7 @@ document.onkeydown = function (e) {
             } else if (isChan) {
                 $(".recommended-prev a").click()
             } else if (isNhentaiImage) {
-                $(selectors.NHENTAI).css("width", 'auto')
-                $(selectors.NHENTAI).css("maxHeight", maxImageHeight.NHENTAI)
-                $(selectors.NHENTAI)[0].scrollIntoView()
+                render_nhentai()
             }
             break
         }
@@ -322,9 +295,7 @@ document.onkeydown = function (e) {
             } else if (isChan) {
                 $(".recommended-next a").click()
             } else if (isNhentaiImage) {
-                $(selectors.NHENTAI).css("width", 'auto')
-                $(selectors.NHENTAI).css("maxHeight", maxImageHeight.NHENTAI)
-                $(selectors.NHENTAI)[0].scrollIntoView()
+                render_nhentai()
             }
             break
         }
@@ -572,3 +543,9 @@ function grab_content(imageSource){
 //         timeout:timeoutLength
 //     })
 // }
+
+function render_nhentai(){
+    $(selectors.NHENTAI).css("width", 'auto')
+    $(selectors.NHENTAI).css("maxHeight", maxImageHeight.NHENTAI)
+    $(selectors.NHENTAI)[0].scrollIntoView()
+}
