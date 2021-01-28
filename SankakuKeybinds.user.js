@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Sankaku Downloader (JQuery)
 // @namespace    http://tampermonkey.net/
-// @version      1.8c-added instagram
+// @version      1.8d-another jQuery addition
 // @description  Added favorite + download keybind for sankaku
 // @author       redrubberband
 // @match        *.bing.com/*
@@ -42,7 +42,7 @@ jQuery.noConflict();
 
 'use strict'
 
-//var $ = window.jQuery
+var $ = window.jQuery
 
 // Change this value to true if you want to customize them
 var using_custom_values        = true
@@ -152,7 +152,7 @@ var isFacebookImage = (currentLocation == "www.facebook.com" && document.locatio
 
 // Init some other default values
 var folderName = folderNames.default
-var singleExecution = !allowRepeatDownloads
+var singleExecutionOnly = !allowRepeatDownloads
 var alreadyExecutedOnce = false
 var imageSource
 var maxImageHeight_Nhentai = '750px'
@@ -171,74 +171,20 @@ console.log("Script is loaded")
 
 if (isExhentaiImage) {
     autoCloseTabAfterDownload = true
-    console.log("Is exhentai image!")
     window.addEventListener("load", function() {
         $(selectors.EXHENTAI).css("width", 'auto')
         $(selectors.EXHENTAI).css("maxHeight", 550)
 
-        document.querySelector(selectors.EXHENTAI).scrollIntoView()
+        $(selectors.EXHENTAI)[0].scrollIntoView()
         if (exHentaiQuickArchiveMode) {
             setSourceAndFolder()
             grab_content(imageSource, folderName)
             window.close()
         }
-        console.log("onLoad event completed")
-    })
-}
-
-else if (isFacebookImage) {
-
-}
-
-else if (isNhentaiImage) {
-    window.onload = function() {
-        document.querySelector(selectors.NHENTAI).style.width = 'auto'
-        document.querySelector(selectors.NHENTAI).style.maxHeight = maxImageHeight_Nhentai
-        document.querySelector(selectors.NHENTAI).scrollIntoView()
-    }
-
-    // THIS ISN'T AN IDEAL SOLUTION BUT IT WORKS FOR NOW
-    document.querySelector("a.next").addEventListener("click", function() {
-        document.querySelector(selectors.NHENTAI).style.width = 'auto'
-        document.querySelector(selectors.NHENTAI).style.maxHeight = maxImageHeight_Nhentai
-        document.querySelector(selectors.NHENTAI).scrollIntoView()
-        document.querySelector("a.next").addEventListener("click", function() {
-            document.querySelector(selectors.NHENTAI).style.width = 'auto'
-            document.querySelector(selectors.NHENTAI).style.maxHeight = maxImageHeight_Nhentai
-            document.querySelector(selectors.NHENTAI).scrollIntoView()
-        })
-    })
-
-    // THIS ISN'T AN IDEAL SOLUTION BUT IT WORKS FOR NOW
-    document.querySelector("a.previous").addEventListener("click", function() {
-        document.querySelector(selectors.NHENTAI).style.width = 'auto'
-        document.querySelector(selectors.NHENTAI).style.maxHeight = maxImageHeight_Nhentai
-        document.querySelector(selectors.NHENTAI).scrollIntoView()
-        document.querySelector("a.previous").addEventListener("click", function() {
-            document.querySelector(selectors.NHENTAI).style.width = 'auto'
-            document.querySelector(selectors.NHENTAI).style.maxHeight = maxImageHeight_Nhentai
-            document.querySelector(selectors.NHENTAI).scrollIntoView()
-        })
     })
 }
 
 else if (isChanImage) {
-    // For now, this jumbled mess is kept for backup purposes.
-
-    //for (var i=0; i<(document.querySelectorAll(".status-notice").length); i++){
-    //    document.querySelectorAll(".status-notice")[i].style.maxHeight = '20px'
-    //}
-    //document.querySelector("#sp1").remove()
-    //document.querySelector("#sp1 iframe").height = 80
-    //window.addEventListener("load", function() {
-    //    document.querySelector("#sp1").remove()
-    //    document.querySelector("#sp1 iframe").height = 80
-    //    document.querySelector("#share").remove()
-    //    document.querySelector("#resized_notice").remove()
-    //    if (document.querySelector("#recommended h3") != null)
-    //        document.querySelector("#recommended h3").remove()
-    //})
-
     // I'll put this outside the onload listener just in case.
     $('div[id="sp1"]').hide()
 
@@ -274,8 +220,8 @@ else if (isChanImage) {
         $("#share").hide()
         $("#recommended h3").hide()
 
-        // jQuery doesn't work with this somehow. Don't change.
-        document.querySelector("#tags").scrollIntoView()
+        // You need to add [0] in jQuery's scrollIntoView for it to work.
+        $("#tags")[0].scrollIntoView()
     })
 }
 
@@ -291,25 +237,57 @@ else if (isChan) {
 }
 
 else if (isE621Image) {
-    document.querySelector(selectors.CHAN).style.width = 'auto'
-    document.querySelector(selectors.CHAN).style.maxHeight = maxImageHeight_E621
-
-    /*
-    for (var i=0; i<(document.querySelectorAll(".status-notice").length); i++){
-        document.querySelectorAll(".status-notice")[i].style.maxHeight = '20px'
-    }
-    document.querySelector("#sp1").remove()
-    window.addEventListener("load", function() {
-        document.querySelector("#sp1").remove()
-        document.querySelector("#share").remove()
-        document.querySelector("#resized_notice").remove()
-        if (document.querySelector("#recommended h3") != null)
-            document.querySelector("#recommended h3").remove()
-    })
-    */
-    document.querySelector("#tags").scrollIntoView()
+    $("#img").css("width", 'auto')
+    $("#img").css("maxHeight", 850)
+    $("#tags")[0].scrollIntoView()
 }
 
+else if (isNhentaiImage) {
+
+    let nhentai_selector = "#image-container a img"
+    $(nhentai_selector).change(function() {
+        window.alert("YEEEAAAAAH")
+    })
+
+    // $( "select" ) .change(function () {
+    //     document.getElementById("loc").innerHTML="You selected: "+document.getElementById("se").value;
+    //     });
+
+    window.onload = function() {
+        document.querySelector(selectors.NHENTAI).style.width = 'auto'
+        document.querySelector(selectors.NHENTAI).style.maxHeight = maxImageHeight_Nhentai
+        document.querySelector(selectors.NHENTAI).scrollIntoView()
+    }
+
+    $("a.next").on("click", function() {
+        $(nhentai_selector).css("width", 'auto')
+        $(nhentai_selector).css("maxHeight", 750)
+        document.querySelector(selectors.NHENTAI).scrollIntoView()
+    })
+    // THIS ISN'T AN IDEAL SOLUTION BUT IT WORKS FOR NOW
+    document.querySelector("a.next").addEventListener("click", function() {
+        document.querySelector(selectors.NHENTAI).style.width = 'auto'
+        document.querySelector(selectors.NHENTAI).style.maxHeight = maxImageHeight_Nhentai
+        document.querySelector(selectors.NHENTAI).scrollIntoView()
+        document.querySelector("a.next").addEventListener("click", function() {
+            document.querySelector(selectors.NHENTAI).style.width = 'auto'
+            document.querySelector(selectors.NHENTAI).style.maxHeight = maxImageHeight_Nhentai
+            document.querySelector(selectors.NHENTAI).scrollIntoView()
+        })
+    })
+
+    // THIS ISN'T AN IDEAL SOLUTION BUT IT WORKS FOR NOW
+    document.querySelector("a.previous").addEventListener("click", function() {
+        document.querySelector(selectors.NHENTAI).style.width = 'auto'
+        document.querySelector(selectors.NHENTAI).style.maxHeight = maxImageHeight_Nhentai
+        document.querySelector(selectors.NHENTAI).scrollIntoView()
+        document.querySelector("a.previous").addEventListener("click", function() {
+            document.querySelector(selectors.NHENTAI).style.width = 'auto'
+            document.querySelector(selectors.NHENTAI).style.maxHeight = maxImageHeight_Nhentai
+            document.querySelector(selectors.NHENTAI).scrollIntoView()
+        })
+    })
+}
 
 // Detect keyboard keypress
 document.onkeydown = function (e) {
@@ -324,15 +302,14 @@ document.onkeydown = function (e) {
                 let originalUrl = document.location.href.split("?")
                 window.location = (originalUrl[0].concat("?p=").concat(parseInt(originalUrl[1].replace(/[^0-9]/g,''))-1))
             } else if (isChan) {
-                document.querySelector(".recommended-prev a").click()
+                $(".recommended-prev a").click()
             } else if (isNhentaiImage) {
-                document.querySelector(selectors.NHENTAI).style.width = 'auto'
-                document.querySelector(selectors.NHENTAI).style.maxHeight = maxImageHeight_Nhentai
-                document.querySelector(selectors.NHENTAI).scrollIntoView()
+                $(selectors.NHENTAI).css("width", 'auto')
+                $(selectors.NHENTAI).css("maxHeight", 750)
+                $(selectors.NHENTAI)[0].scrollIntoView()
             }
             break
         }
-
         case "ArrowRight":{
             if (isExhentai) {
                 let originalUrl = document.location.href.split("?")
@@ -341,12 +318,12 @@ document.onkeydown = function (e) {
                 } catch (err){
                     window.location = (originalUrl[0].concat("?p=1"))
                 }
-            //} else if (isChan) {
-            //    document.querySelector(".recommended-next a").click()
+            } else if (isChan) {
+                $(".recommended-next a").click()
             } else if (isNhentaiImage) {
-                document.querySelector(selectors.NHENTAI).style.width = 'auto'
-                document.querySelector(selectors.NHENTAI).style.maxHeight = maxImageHeight_Nhentai
-                document.querySelector(selectors.NHENTAI).scrollIntoView()
+                $(selectors.NHENTAI).css("width", 'auto')
+                $(selectors.NHENTAI).css("maxHeight", 750)
+                $(selectors.NHENTAI)[0].scrollIntoView()
             }
             break
         }
@@ -354,26 +331,26 @@ document.onkeydown = function (e) {
         case favoriteKey:{
             console.log("Key " + favoriteKey + " is pressed")
             if (isChan){
-                let favicon     = document.querySelector(".favoriteIcon")
-                let addToFavs   = document.querySelector("#add-to-favs")
-                //check if fav-icon is hidden
-                var currStyle   = window.getComputedStyle(addToFavs)
-                //check if fav-icon is already favorited
-                if (currStyle.getPropertyValue("display") == "none"){
-                    console.log("Changing favorite value...")
-                    // commented to prevent accidental unfavorite
-                    //favicon = document.querySelector(".favoriteIcon.clicked")
-                    //console.log(favicon)
-                }
-                favicon.click()
-                //revert back to default state for repeatability
-                favicon = document.querySelector(".favoriteIcon")
-                break
+                // DO NOT CONVERT TO JQUERY
+                // The computed style is not working properly with jQuery.
+                var favorite_icon           = document.querySelector(".favoriteIcon")
+                let available_to_favorite   = document.querySelector("#add-to-favs")
+                let current_style           = window.getComputedStyle(available_to_favorite) // Check if fav-icon is hidden
+                // !!-- Commented to prevent accidental unfavorite, uncomment it to use the unfavorite function --!!
+                // if (current_style.getPropertyValue("display") == "none"){ // Check if fav-icon is already favorited 
+                //     console.log("Changing favorite value...")
+                //     favorite_icon = document.querySelector(".favoriteIcon.clicked")
+                // }
+                favorite_icon.click()
+                // Revert back to default state for repeatability
+                favorite_icon = document.querySelector(".favoriteIcon")
+                break  
+
             } else if (isBetaSankakuImage) {
-                console.log("is beta sankaku img")
+                // Not going to convert this one to jQuery as I don't really have any use for this version as of now.
                 let all_buttons = document.querySelectorAll(selectors.SANKAKU_BETA_FAV)
                 let favorite_button
-                // current status as of October 19th 2020
+                // Current status as of October 19th 2020
                 switch (all_buttons.length) {
                     case 43:
                         favorite_button = all_buttons[17]
@@ -386,33 +363,35 @@ document.onkeydown = function (e) {
                         break
                 }
                 console.log(favorite_button)
-                //favorite_button.dispatchEvent(new Event('click'));
+                // favorite_button.dispatchEvent(new Event('click'));
                 favorite_button.dispatchEvent(new MouseEvent("click"));
                 break
+
             } else if (isE621Image){
-                let fav_button = document.querySelector("#add-to-favorites")
-                fav_button.click()
+                $("#add-to-favorites").click()
                 break
+
             } else {
-                console.log("Website is not Chan / Idol / E621!")
+                console.log("Script is not configured to favorite outside Chan / Idol / E621!")
                 break
             }
         }
 
         case downloadKey:{
             console.log("Key " + downloadKey + " is pressed")
+            
+            // Special function because this beta website is a pain to work with
             if (isBetaSankakuImage){
-                // current status as of October 19th 2020
+                // Current status as of October 19th 2020
                 let download_button = document.querySelectorAll(selectors.SANKAKU_BETA_DOWN)[3]
                 download_button.click()
                 break
             }
+
             if (!alreadyExecutedOnce){
                 setSourceAndFolder()
-                // Calls the download function
-                grab_content(imageSource, folderName)
-                // Prevents duplicate download
-                if (singleExecution) alreadyExecutedOnce = true
+                grab_content(imageSource, folderName) // Calls the download function
+                if (singleExecutionOnly) alreadyExecutedOnce = true // Prevents duplicate download
             } else {
                 console.log("Repeat download is disabled! You have already downloaded this image once")
             }
@@ -424,19 +403,19 @@ document.onkeydown = function (e) {
 function setSourceAndFolder() {
     switch(currentLocation){
         case addresses.BING:
-            imageSource = document.querySelector(selectors.BING).currentSrc
+            imageSource =$(selectors.BING).currentSrc
             folderName = folderNames.BING
             break
         case addresses.CHAN:
-            imageSource = document.querySelector(selectors.CHAN).currentSrc
+            imageSource = $(selectors.CHAN).currentSrc
             folderName = folderNames.CHAN
             break
         case addresses.CHAN_IDOL:
-            imageSource = document.querySelector(selectors.CHAN).currentSrc
+            imageSource = $(selectors.CHAN).currentSrc
             folderName = folderNames.CHAN_IDOL
             break
         case addresses.REDGIFS:
-            imageSource = document.querySelector(selectors.REDGIFS).currentSrc
+            imageSource = $(selectors.REDGIFS).currentSrc
             folderName = folderNames.REDGIFS
             break
         case addresses.SANKAKU_WEBSITE:
