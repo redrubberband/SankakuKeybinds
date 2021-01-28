@@ -102,7 +102,9 @@ const addresses = {
     SANKAKU_BETA        : "beta.sankakucomplex.com",
     HITOMI_LA           : "hitomi.la",
     DELTAPORNO          : "gallery.deltaporno.com",
-    E621                : "e621.net"
+    E621                : "e621.net",
+    INSTAGRAM           : "www.instagram.com",
+    FACEBOOK            : "www.facebook.com",
 }
 
 const selectors = {
@@ -121,6 +123,7 @@ const selectors = {
     HITOMI_LA           : "#comicImages picture img",
     DELTAPORNO          : "#image-viewer-container img",
     E621                : "#image",
+    INSTAGRAM           : "article div div div div img",
     default             : "img",
 }
 
@@ -479,12 +482,12 @@ function setSourceAndFolder() {
             imageSource = document.querySelector(selectors.E621).currentSrc
             folderName = folderNames.E621
             break
-        case "www.facebook.com":
-            imageSource = document.querySelector("img").currentSrc
+        case addresses.FACEBOOK:
+            imageSource = document.querySelector(selectors.default).currentSrc
             folderName = "facebook"
             break
-        case "www.instagram.com":
-            imageSource = document.querySelector("article div div div div img").src
+        case addresses.INSTAGRAM:
+            imageSource = document.querySelector(INSTAGRAM).src
             folderName = "instagram"
             break
     }
