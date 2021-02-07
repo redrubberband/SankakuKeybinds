@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Sankaku Downloader (JQuery)
 // @namespace    http://tampermonkey.net/
-// @version      1.9a - finally nhentai resizing is done.
+// @version      1.9b - fixed exhentai resizing.
 // @description  Added favorite + download keybind for sankaku
 // @author       redrubberband
 // @match        *.bing.com/*
@@ -26,7 +26,7 @@
 
 // ==/UserScript==
 
-/*  These sites are (partially) supported but disabled. 
+/*  These sites are (partially) supported but disabled.
     Features are also disabled because it's unused.
     If you want to enable them, just move them above, near lines of "@match" for sites or "@grant" for features.
     If you re-enabled features, please uncomment the lines down below. Just ctrl+f for the respective function name. */
@@ -191,6 +191,9 @@ if (isExhentaiImage) {
             window.close()
         }
     })
+    $(selectors.EXHENTAI).css("width", 'auto')
+    $(selectors.EXHENTAI).css("maxHeight", maxImageHeight.EXHENTAI)
+    $(selectors.EXHENTAI)[0].scrollIntoView()
 }
 
 else if (isChanImage) {
@@ -249,7 +252,7 @@ else if (isNhentaiImage) {
     $("body #content #image-container").on('click', function() {
         render_nhentai()
     })
-    
+
 }
 
 else if (isChan) {
@@ -258,8 +261,11 @@ else if (isChan) {
         // Hide EVERY SINGLE #sp1
         $('div[id="sp1"]').hide()
 
-        // Remove the "Get plus" ad
+        // Hide the "Get plus" ad
         $("#has-mail-notice").hide()
+
+        // Actually remove the other "Get plus" ad
+        $("#sank-prestitial").remove()
     })
 }
 
@@ -307,14 +313,14 @@ document.onkeydown = function (e) {
                 let available_to_favorite   = document.querySelector("#add-to-favs")
                 let current_style           = window.getComputedStyle(available_to_favorite) // Check if fav-icon is hidden
                 /* !!-- Commented to prevent accidental unfavorite, uncomment it to use the unfavorite function --!! */
-                // if (current_style.getPropertyValue("display") == "none"){ // Check if fav-icon is already favorited 
+                // if (current_style.getPropertyValue("display") == "none"){ // Check if fav-icon is already favorited
                 //     console.log("Changing favorite value...")
                 //     favorite_icon = document.querySelector(".favoriteIcon.clicked")
                 // }
                 favorite_icon.click()
                 // Revert back to default state for repeatability
                 favorite_icon = document.querySelector(".favoriteIcon")
-                break  
+                break
 
             } else if (isBetaSankakuImage) {
                 // Not going to convert this one to jQuery as I don't really have any use for this beta site as of now.
@@ -349,7 +355,7 @@ document.onkeydown = function (e) {
 
         case downloadKey:{
             console.log("Key " + downloadKey + " is pressed")
-            
+
             // Special function because this beta website is a pain to work with
             if (isBetaSankakuImage){
                 // Current status as of October 19th 2020
@@ -366,6 +372,14 @@ document.onkeydown = function (e) {
                 console.log("Repeat download is disabled! You have already downloaded this image once")
             }
             break;
+        }
+
+        case "\\":{
+            console.log("Fixing exhentai image size")
+            $(selectors.EXHENTAI).css("width", 'auto')
+            $(selectors.EXHENTAI).css("maxHeight", maxImageHeight.EXHENTAI)
+            $(selectors.EXHENTAI)[0].scrollIntoView()
+            break
         }
     }
 }
