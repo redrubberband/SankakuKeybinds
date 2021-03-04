@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Sankaku Downloader (JQuery)
 // @namespace    http://tampermonkey.net/
-// @version      1.9b - fixed exhentai resizing.
+// @version      1.9d - exh+chan resize
 // @description  Added favorite + download keybind for sankaku
 // @author       redrubberband
 // @match        *.bing.com/*
@@ -148,7 +148,7 @@ const folderNames = {
 }
 
 const maxImageHeight = {
-    CHAN    : 450,
+    CHAN    : 400,
     NHENTAI : 750,
     E621    : 850,
     EXHENTAI: 550
@@ -194,6 +194,11 @@ if (isExhentaiImage) {
     $(selectors.EXHENTAI).css("width", 'auto')
     $(selectors.EXHENTAI).css("maxHeight", maxImageHeight.EXHENTAI)
     $(selectors.EXHENTAI)[0].scrollIntoView()
+}
+
+else if (isExhentai) {
+    // Scrolls directly to gallery images
+    $("#gdt")[0].scrollIntoView()
 }
 
 else if (isChanImage) {
@@ -375,11 +380,20 @@ document.onkeydown = function (e) {
         }
 
         case "\\":{
-            console.log("Fixing exhentai image size")
-            $(selectors.EXHENTAI).css("width", 'auto')
-            $(selectors.EXHENTAI).css("maxHeight", maxImageHeight.EXHENTAI)
-            $(selectors.EXHENTAI)[0].scrollIntoView()
-            break
+            if (isExhentaiImage){
+                console.log("Fixing exhentai image size")
+                $(selectors.EXHENTAI).css("width", 'auto')
+                $(selectors.EXHENTAI).css("maxHeight", maxImageHeight.EXHENTAI)
+                $(selectors.EXHENTAI)[0].scrollIntoView()
+                break
+            } else if (isChanImage){
+                console.log("Fixing chan image size")
+                $(selectors.CHAN).css("width", 'auto')
+                $(selectors.CHAN).css("maxHeight", maxImageHeight.CHAN)
+                $(selectors.CHAN)[0].scrollIntoView()
+                break
+            }
+
         }
     }
 }
