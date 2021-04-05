@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Sankaku Downloader (JQuery)
 // @namespace    http://tampermonkey.net/
-// @version      1.9d - exh+chan resize
+// @version      1.10a - i tried to add betasankaku again, failed.
 // @description  Added favorite + download keybind for sankaku
 // @author       redrubberband
 // @match        *.bing.com/*
@@ -328,24 +328,35 @@ document.onkeydown = function (e) {
                 break
 
             } else if (isBetaSankakuImage) {
-                // Not going to convert this one to jQuery as I don't really have any use for this beta site as of now.
-                let all_buttons = document.querySelectorAll(selectors.SANKAKU_BETA_FAV)
-                let favorite_button
-                // Current status as of October 19th 2020
-                switch (all_buttons.length) {
-                    case 43:
-                        favorite_button = all_buttons[17]
-                        break
-                    case 44:
-                        favorite_button = all_buttons[18]
-                        break
-                    case 45:
-                        favorite_button = all_buttons[19]
-                        break
-                }
+                // // Not going to convert this one to jQuery as I don't really have any use for this beta site as of now.
+                // let all_buttons = document.querySelectorAll(selectors.SANKAKU_BETA_FAV)
+                // let favorite_button
+                // // Current status as of October 19th 2020
+                // switch (all_buttons.length) {
+                //     case 43:
+                //         favorite_button = all_buttons[17]
+                //         break
+                //     case 44:
+                //         favorite_button = all_buttons[18]
+                //         break
+                //     case 45:
+                //         favorite_button = all_buttons[19]
+                //         break
+                // }
+                // console.log(favorite_button)
+                // // favorite_button.dispatchEvent(new Event('click'));
+                // // favorite_button.dispatchEvent(new MouseEvent("click"));
+                console.log("is beta.")
+                let favorite_button = $('[data-test="fav"]')[0]
                 console.log(favorite_button)
-                // favorite_button.dispatchEvent(new Event('click'));
-                favorite_button.dispatchEvent(new MouseEvent("click"));
+                //favorite_button.dispatchEvent(new Event('click'))
+                //favorite_button.
+                //favorite_button.dispatchEvent(new MouseEvent('click'))
+                //favorite_button.mousedown()
+                // sigh. it does not work.
+
+                // possible event: mousedown
+                // another: onmouseclick (huge possibility)
                 break
 
             } else if (isE621Image){
@@ -364,7 +375,9 @@ document.onkeydown = function (e) {
             // Special function because this beta website is a pain to work with
             if (isBetaSankakuImage){
                 // Current status as of October 19th 2020
-                let download_button = document.querySelectorAll(selectors.SANKAKU_BETA_DOWN)[3]
+                // let download_button = document.querySelectorAll(selectors.SANKAKU_BETA_DOWN)[3]
+                // download_button.click()
+                let download_button = $('[title="Download"]')
                 download_button.click()
                 break
             }
