@@ -539,6 +539,7 @@ function grab_content(imageSource){
         let gallery_identifier = gallery_code.substring(0, gallery_code.indexOf("-"))
         let image_code = location.pathname.replace(/[\/]/g, "-")
         image_code = image_code.substring(image_code.indexOf(gallery_identifier))
+        image_code = image_code.substring(image_code.indexOf("-")+1)
 
         // Part 3 (final)
         fileName = gallery_code.concat(image_code+""+original_extension)
