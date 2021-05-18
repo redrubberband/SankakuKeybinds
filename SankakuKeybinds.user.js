@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Sankaku Downloader (JQuery)
 // @namespace    http://tampermonkey.net/
-// @version      1.10a - i tried to add betasankaku again, failed.
+// @version      1.11 - changed ehentai naming scheme
 // @description  Added favorite + download keybind for sankaku
 // @author       redrubberband
 // @match        *.bing.com/*
@@ -20,6 +20,7 @@
 // @match        redgifs.com/*
 // @match        *.facebook.com/*
 // @match        *.instagram.com/*
+// @match        *.donmai.us/*
 // @grant        GM_download
 // @require      https://code.jquery.com/jquery-3.5.1.min.js
 
@@ -105,6 +106,8 @@ const addresses = {
     E621                : "e621.net",
     INSTAGRAM           : "www.instagram.com",
     FACEBOOK            : "www.facebook.com",
+    DANBOORU            : "danbooru.donmai.us"
+
 }
 
 const selectors = {
@@ -144,6 +147,7 @@ const folderNames = {
     HITOMI_LA           : "hitomi.la",
     DELTAPORNO          : "deltaporno",
     E621                : "e621",
+    DANBOORU            : "Sankaku Channel/Danbooru",
     default             : window.location.hostname
 }
 
@@ -151,11 +155,12 @@ const maxImageHeight = {
     CHAN    : 400,
     NHENTAI : 750,
     E621    : 850,
-    EXHENTAI: 550
+    EXHENTAI: 550,
+    DANBOORU: 650
 }
 
-var isChan = (currentLocation == addresses.CHAN) || (currentLocation == addresses.CHAN_IDOL)
-var isChanImage = (isChan && document.location.href.indexOf("/post/show") > -1 )
+var isChan = (currentLocation == addresses.CHAN) || (currentLocation == addresses.CHAN_IDOL) || (currentLocation == addresses.DANBOORU)
+var isChanImage = (isChan && document.location.href.indexOf("/post/show") > -1 ) || (isChan && document.location.href.indexOf("/posts/") > -1 )
 var isBing = (currentLocation == addresses.BING)
 var isExhentai = ((currentLocation == addresses.EXHENTAI || currentLocation == addresses.EHENTAI) && document.location.href.indexOf("/g/") > -1)
 var isExhentaiImage = ((currentLocation == addresses.EXHENTAI || currentLocation == addresses.EHENTAI) && document.location.href.indexOf("/s/") > -1)
@@ -210,6 +215,7 @@ else if (isChanImage) {
         // Resize the image to fit your screen
         $(selectors.CHAN).css("width", "auto")
         $(selectors.CHAN).css("maxHeight", maxImageHeight.CHAN)
+        if (currentLocation == addresses.DANBOORU) $(selectors.CHAN).css("maxHeight", maxImageHeight.DANBOORU)
 
         // Hide EVERY SINGLE #sp1 (fucking duplicate IDs, man)
         // (it's the "Hide ads" one with huge empty space if you have adblocker)
@@ -403,6 +409,7 @@ document.onkeydown = function (e) {
                 console.log("Fixing chan image size")
                 $(selectors.CHAN).css("width", 'auto')
                 $(selectors.CHAN).css("maxHeight", maxImageHeight.CHAN)
+                if (currentLocation == addresses.DANBOORU) $(selectors.CHAN).css("maxHeight", maxImageHeight.DANBOORU)
                 $(selectors.CHAN)[0].scrollIntoView()
                 break
             }
@@ -500,6 +507,10 @@ function setSourceAndFolder() {
             imageSource = document.querySelector(INSTAGRAM).src
             folderName = "instagram"
             break
+        case addresses.DANBOORU:
+            imageSource = document.querySelector(selectors.CHAN).currentSrc
+            folderName = folderNames.DANBOORU
+            break
     }
 }
 
@@ -511,10 +522,26 @@ function grab_content(imageSource){
     let fileName = imageSource.replace(/^.*[\\\/]/, '');
 
     if (isExhentaiImage) {
-        //console.log(fileName)
-        //fileName = document.querySelector("h1").innerHTML.split('\|').join('／').split('\/').join('／').replace(/^.*[\\\/]/, '').concat(" "+fileName)
-        //fileName = document.querySelector("h1").innerHTML.replace('\|', '[').replace('\|', ']').replace('\/', '／').replace(/^.*[\\\/]/, '').concat(" "+fileName)
-        fileName = document.querySelector("h1").innerHTML.replace('\|', '[').replace('\|', ']').replace(/^.*[\\\/]/, '').replace(/[:\/|&;$%@"<>()+,?]/g, "-").replace(/^\s+/,"").concat(" "+fileName)
+        // console.log(fileName)
+        // fileName = document.querySelector("h1").innerHTML.split('\|').join('／').split('\/').join('／').replace(/^.*[\\\/]/, '').concat(" "+fileName)
+        // fileName = document.querySelector("h1").innerHTML.replace('\|', '[').replace('\|', ']').replace('\/', '／').replace(/^.*[\\\/]/, '').concat(" "+fileName)
+        // fileName = document.querySelector("h1").innerHTML.replace('\|', '[').replace('\|', ']').replace(/^.*[\\\/]/, '').replace(/[:\/|&;$%@"<>()+,?]/g, "-").replace(/^\s+/,"").concat(" "+fileName)
+        
+        // Part 0 (get original file extension)
+        let original_extension = fileName.substring(fileName.indexOf("."))
+
+        // Part 1 (get gallery link)
+        let original_link = $('.sb a').attr('href')
+        let gallery_code = original_link.substring(original_link.indexOf("/g/")+3)
+        gallery_code = gallery_code.replace(/[\/]/g, "-")
+
+        // Part 2 (get image number from current address)
+        let gallery_identifier = gallery_code.substring(0, gallery_code.indexOf("-"))
+        let image_code = location.pathname.replace(/[\/]/g, "-")
+        image_code = image_code.substring(image_code.indexOf(gallery_identifier))
+
+        // Part 3 (final)
+        fileName = gallery_code.concat(image_code+""+original_extension)
         console.log(fileName)
         //console.log(typeof(fileName))
     } else if (isNhentaiImage) {
