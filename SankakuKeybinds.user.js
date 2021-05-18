@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Sankaku Downloader (JQuery)
 // @namespace    http://tampermonkey.net/
-// @version      1.11 - changed ehentai naming scheme
+// @version      1.12 - changed sankaku naming scheme
 // @description  Added favorite + download keybind for sankaku
 // @author       redrubberband
 // @match        *.bing.com/*
@@ -526,7 +526,7 @@ function grab_content(imageSource){
         // fileName = document.querySelector("h1").innerHTML.split('\|').join('／').split('\/').join('／').replace(/^.*[\\\/]/, '').concat(" "+fileName)
         // fileName = document.querySelector("h1").innerHTML.replace('\|', '[').replace('\|', ']').replace('\/', '／').replace(/^.*[\\\/]/, '').concat(" "+fileName)
         // fileName = document.querySelector("h1").innerHTML.replace('\|', '[').replace('\|', ']').replace(/^.*[\\\/]/, '').replace(/[:\/|&;$%@"<>()+,?]/g, "-").replace(/^\s+/,"").concat(" "+fileName)
-        
+
         // Part 0 (get original file extension)
         let original_extension = fileName.substring(fileName.indexOf("."))
 
@@ -553,6 +553,15 @@ function grab_content(imageSource){
     } else if (isTsuminoImage) {
         let title = document.title
         fileName = title.replace(/[|&;$%@"<>()+,/]/g, "-").substring(("Tsumino - Read ").length).concat(" "+fileName)
+        console.log(fileName)
+    } else if (isChanImage) {
+        let original_extension = fileName.substring(fileName.indexOf("."))
+
+        //let image_code = location.pathname.replace(/[\/]/g, "-")
+        let identifier = "/post/show/"
+        let image_code = location.pathname.substring(location.pathname.indexOf(identifier)+identifier.length)
+
+        fileName = image_code.concat(original_extension)
         console.log(fileName)
     }
 
