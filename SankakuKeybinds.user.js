@@ -532,7 +532,7 @@ function grab_content(imageSource){
 
         // Part 1 (get gallery link)
         let original_link = $('.sb a').attr('href')
-        let gallery_code = original_link.substring(original_link.indexOf("/g/")+3)
+        let gallery_code = original_link.substring(original_link.indexOf("/g/")+3, original_link.lastIndexOf("/")+1)
         gallery_code = gallery_code.replace(/[\/]/g, "-")
 
         // Part 2 (get image number from current address)
